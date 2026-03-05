@@ -1,0 +1,19 @@
+package service
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/yaBliznyk/newsportal/internal/domain"
+)
+
+func (s *newsService) ListNews(ctx context.Context, req domain.ListNewsReq) (*domain.ListNewsResp, error) {
+	news, err := s.repo.ListNews(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("repo.ListNews: %w", err)
+	}
+
+	return &domain.ListNewsResp{
+		News: news,
+	}, nil
+}
