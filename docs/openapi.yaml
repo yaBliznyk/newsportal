@@ -1,0 +1,369 @@
+openapi: 3.0.3
+info:
+  title: News Portal API
+  description: API для новостного портала с функционалом только на чтение
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current server
+
+paths:
+  /v1/listNews:
+    get:
+      summary: Список новостей
+      description: Возвращает список новостей с фильтрацией и пагинацией (краткий формат без content)
+      operationId: listNews
+      parameters:
+        - name: category
+          in: query
+          description: ID категории
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: tag
+          in: query
+          description: ID тега
+          required: false
+          schema:
+            type: integer
+            example: 5
+        - name: from
+          in: query
+          description: Начало периода (datetime)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2026-01-01T00:00:00Z"
+        - name: to
+          in: query
+          description: Конец периода (datetime)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2026-03-06T23:59:59Z"
+        - name: page
+          in: query
+          description: Номер страницы
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Количество новостей на страницу
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNewsResp'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/countNews:
+    get:
+      summary: Количество новостей
+      description: Возвращает количество новостей по фильтру
+      operationId: countNews
+      parameters:
+        - name: category
+          in: query
+          description: ID категории
+          required: false
+          schema:
+            type: integer
+        - name: tag
+          in: query
+          description: ID тега
+          required: false
+          schema:
+            type: integer
+        - name: from
+          in: query
+          description: Начало периода (datetime)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Конец периода (datetime)
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CountNewsResp'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/getNews:
+    get:
+      summary: Получить новость
+      description: Возвращает конкретную новость в полном формате (с content)
+      operationId: getNews
+      parameters:
+        - name: id
+          in: query
+          description: ID новости
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNewsResp'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/getCategories:
+    get:
+      summary: Список категорий
+      description: Возвращает список доступных категорий
+      operationId: getCategories
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCategoriesResp'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/getTags:
+    get:
+      summary: Список тегов
+      description: Возвращает список тегов
+      operationId: getTags
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTagsResp'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    Category:
+      type: object
+      required:
+        - ID
+        - Name
+      properties:
+        ID:
+          type: integer
+          example: 1
+        Name:
+          type: string
+          description: Название категории
+          example: "Политика"
+
+    Tag:
+      type: object
+      required:
+        - ID
+        - Name
+      properties:
+        ID:
+          type: integer
+          example: 5
+        Name:
+          type: string
+          example: "США"
+
+    ListNewsItem:
+      type: object
+      description: Краткий формат новости (без content)
+      required:
+        - ID
+        - Title
+        - Category
+        - Author
+        - CreatedAt
+      properties:
+        ID:
+          type: integer
+          example: 123
+        Title:
+          type: string
+          description: Название
+          example: "Владимир Путин провел совещание"
+        Category:
+          $ref: '#/components/schemas/Category'
+        Tags:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/Tag'
+        Author:
+          type: string
+          example: "Иван Петров"
+        CreatedAt:
+          type: string
+          format: date-time
+          example: "2026-02-27T10:30:00Z"
+        PublishedAt:
+          type: string
+          format: date-time
+          example: "2026-02-27T12:00:00Z"
+
+    ListNewsResp:
+      type: object
+      required:
+        - News
+      properties:
+        News:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListNewsItem'
+
+    News:
+      type: object
+      description: Полный формат новости (с content)
+      required:
+        - ID
+        - Title
+        - Preamble
+        - Content
+        - Category
+        - Author
+        - CreatedAt
+      properties:
+        ID:
+          type: integer
+          example: 123
+        Title:
+          type: string
+          description: Название
+          example: "Владимир Путин провел совещание"
+        Preamble:
+          type: string
+          description: Краткое описание
+          example: "Президент обсудил вопросы экономического развития"
+        Content:
+          type: string
+          description: Содержание (HTML)
+          example: "<p>Текст новости...</p>"
+        Category:
+          $ref: '#/components/schemas/Category'
+        Tags:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/Tag'
+        Author:
+          type: string
+          example: "Иван Петров"
+        CreatedAt:
+          type: string
+          format: date-time
+          example: "2026-02-27T10:30:00Z"
+        PublishedAt:
+          type: string
+          format: date-time
+          example: "2026-02-27T12:00:00Z"
+
+    GetNewsResp:
+      type: object
+      required:
+        - News
+      properties:
+        News:
+          $ref: '#/components/schemas/News'
+
+    GetCategoriesResp:
+      type: object
+      required:
+        - Categories
+      properties:
+        Categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    GetTagsResp:
+      type: object
+      required:
+        - Tags
+      properties:
+        Tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+
+    CountNewsResp:
+      type: object
+      required:
+        - Count
+      properties:
+        Count:
+          type: integer
+          example: 42
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: "invalid data"
+
+  responses:
+    BadRequest:
+      description: Некорректные данные
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "invalid data"
+
+    NotFound:
+      description: Данные не найдены
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "data not found"
+
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "internal server error"
