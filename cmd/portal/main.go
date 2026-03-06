@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/yaBliznyk/newsportal/internal/config"
 	"github.com/yaBliznyk/newsportal/internal/endpoints/public"
 	"github.com/yaBliznyk/newsportal/internal/repository"
 	"github.com/yaBliznyk/newsportal/internal/service"
@@ -24,11 +25,15 @@ func main() {
 	// Инициализация логгера
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
-	// Загрузка конфигурации из переменных окружения
-	dbURL := getEnv("DATABASE_URL", "postgres://test:test@localhost:5432/test?sslmode=disable")
+	// Загрузка конфигурации
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("failed to load config", "error", err)
+		os.Exit(1)
+	}
 
 	// Инициализация подключения к PostgreSQL
-	pool, err := pgxpool.New(ctx, dbURL)
+	pool, err := pgxpool.New(ctx, cfg.Database.URL)
 	if err != nil {
 		log.Error("failed to create connection pool", "error", err)
 		os.Exit(1)
@@ -51,11 +56,10 @@ func main() {
 	ctrl := public.NewController(log, svc)
 	ctrl.Init(mux)
 
-	addr := getEnv("HTTP_ADDR", ":8080")
-	server := &http.Server{Addr: addr, Handler: mux}
+	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: mux}
 
 	go func() {
-		log.Info("HTTP server starting", "addr", addr)
+		log.Info("HTTP server starting", "addr", cfg.HTTP.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error("HTTP server error", "error", err)
 			os.Exit(1)
@@ -76,11 +80,4 @@ func main() {
 	if err := server.Shutdown(timeoutCtx); err != nil {
 		log.Error("HTTP server shutdown error", "error", err)
 	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

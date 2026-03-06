@@ -3,7 +3,17 @@
 # Скрипт для тестирования API news_portal
 # Запуск: ./test_api.sh
 
-BASE_URL="http://localhost:8080"
+# Загрузка конфигурации из .env файла
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+fi
+
+# Формирование BASE_URL из HTTP_ADDR (по умолчанию :8080)
+HTTP_ADDR="${HTTP_ADDR:-:8080}"
+BASE_URL="http://localhost${HTTP_ADDR}"
 FAILED=0
 PASSED=0
 

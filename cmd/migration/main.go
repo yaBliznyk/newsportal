@@ -25,7 +25,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open db: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close db: %v", err)
+		}
+	}()
 
 	goose.SetBaseFS(migrations.Files)
 
