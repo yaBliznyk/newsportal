@@ -10,11 +10,13 @@ func (r *NewsRepository) GetCategories(ctx context.Context) ([]domain.Category, 
 	const query = `
 		SELECT "categoryId", "name"
 		FROM "categories"
-		WHERE "statusId" = (SELECT "statusId" FROM "statuses" WHERE "name" = 'active')
+		WHERE "statusId" = @statusID
 		ORDER BY "sortOrder", "name"
 	`
 
-	rows, err := r.db.Query(ctx, query)
+	args := map[string]any{"statusID": domain.StatusPublished}
+
+	rows, err := r.db.Query(ctx, query, args)
 	if err != nil {
 		return nil, err
 	}
