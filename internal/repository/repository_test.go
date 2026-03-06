@@ -11,6 +11,7 @@ import (
 
 	"github.com/yaBliznyk/newsportal/internal/domain"
 	"github.com/yaBliznyk/newsportal/internal/repository"
+	"github.com/yaBliznyk/newsportal/internal/svcerrs"
 )
 
 // Константы для справочных данных из сидов
@@ -140,7 +141,7 @@ func TestGetNews_NotFound(t *testing.T) {
 
 	news, err := repo.GetNews(t.Context(), 99999)
 
-	require.NoError(t, err)
+	assert.ErrorIs(t, err, svcerrs.ErrDataNotFound, "should return ErrDataNotFound for non-existent news")
 	assert.Nil(t, news, "should return nil for non-existent news")
 }
 
@@ -153,7 +154,7 @@ func TestGetNews_DraftNotReturned(t *testing.T) {
 
 	news, err := repo.GetNews(t.Context(), newsID)
 
-	require.NoError(t, err)
+	assert.ErrorIs(t, err, svcerrs.ErrDataNotFound, "draft news should return ErrDataNotFound")
 	assert.Nil(t, news, "draft news should not be returned")
 }
 

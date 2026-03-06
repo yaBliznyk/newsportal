@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
@@ -57,33 +58,66 @@ func (r *NewsRepository) ListNews(ctx context.Context, req domain.ListNewsReq) (
 	}
 	defer rows.Close()
 
-	var newsList []domain.ListNewsItem
+	// Временная структура для хранения DAO с tagIDs
+	type newsRow struct {
+		dao    NewsListItemDAO
+		tagIDs []int32
+	}
+
+	var newsRows []newsRow
+	allTagIDs := make(map[int32]struct{})
+
+	// Первый проход: собираем DAO и все уникальные tagIDs
 	for rows.Next() {
-		var item domain.ListNewsItem
-		var tagIDs []int32
+		var dao NewsListItemDAO
 		err := rows.Scan(
-			&item.ID,
-			&item.Title,
-			&item.Category.ID,
-			&item.Category.Name,
-			&tagIDs,
-			&item.Author,
-			&item.CreatedAt,
-			&item.PublishedAt,
+			&dao.ID,
+			&dao.Title,
+			&dao.CategoryID,
+			&dao.Category,
+			&dao.TagIDs,
+			&dao.Author,
+			&dao.CreatedAt,
+			&dao.PublishedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan news item: %w", err)
 		}
 
-		if len(tagIDs) > 0 {
-			item.Tags, err = r.getTagsByIDs(ctx, tagIDs)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get tags: %w", err)
-			}
+		newsRows = append(newsRows, newsRow{dao: dao, tagIDs: dao.TagIDs})
+		for _, id := range dao.TagIDs {
+			allTagIDs[id] = struct{}{}
 		}
-
-		newsList = append(newsList, item)
 	}
 
-	return newsList, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Один запрос для получения всех тегов
+	var tagsMap map[int32]domain.Tag
+	if len(allTagIDs) > 0 {
+		tagIDList := make([]int32, 0, len(allTagIDs))
+		for id := range allTagIDs {
+			tagIDList = append(tagIDList, id)
+		}
+		tagsMap, err = r.getTagsMapByIDs(ctx, tagIDList)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get tags: %w", err)
+		}
+	}
+
+	// Второй проход: конвертируем DAO в domain модели
+	newsList := make([]domain.ListNewsItem, 0, len(newsRows))
+	for _, row := range newsRows {
+		tags := make([]domain.Tag, 0, len(row.tagIDs))
+		for _, tagID := range row.tagIDs {
+			if tag, ok := tagsMap[tagID]; ok {
+				tags = append(tags, tag)
+			}
+		}
+		newsList = append(newsList, row.dao.ToDomain(tags))
+	}
+
+	return newsList, nil
 }

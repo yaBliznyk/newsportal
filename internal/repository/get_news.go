@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+
 	"github.com/yaBliznyk/newsportal/internal/domain"
+	"github.com/yaBliznyk/newsportal/internal/svcerrs"
 )
 
 func (r *NewsRepository) GetNews(ctx context.Context, id int) (*domain.News, error) {
@@ -24,65 +26,31 @@ func (r *NewsRepository) GetNews(ctx context.Context, id int) (*domain.News, err
 		"statusID": domain.StatusPublished,
 	}
 
-	var news domain.News
-	var tagIDs []int32
+	var dao NewsDAO
 	err := r.db.QueryRow(ctx, query, args).Scan(
-		&news.ID,
-		&news.Title,
-		&news.Preamble,
-		&news.Content,
-		&news.Category.ID,
-		&news.Category.Name,
-		&tagIDs,
-		&news.Author,
-		&news.CreatedAt,
-		&news.PublishedAt,
+		&dao.ID,
+		&dao.Title,
+		&dao.Preamble,
+		&dao.Content,
+		&dao.CategoryID,
+		&dao.Category,
+		&dao.TagIDs,
+		&dao.Author,
+		&dao.CreatedAt,
+		&dao.PublishedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, svcerrs.ErrDataNotFound
 		}
 		return nil, fmt.Errorf("failed to get news: %w", err)
 	}
 
-	if len(tagIDs) > 0 {
-		news.Tags, err = r.getTagsByIDs(ctx, tagIDs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get tags: %w", err)
-		}
-	}
-
-	return &news, nil
-}
-
-func (r *NewsRepository) getTagsByIDs(ctx context.Context, tagIDs []int32) ([]domain.Tag, error) {
-	query := `
-		SELECT "tagId", "name"
-		FROM "tags"
-		WHERE "tagId" = ANY(@tagIDs)
-		  AND "statusId" = @statusID
-		ORDER BY "name"
-	`
-
-	args := pgx.NamedArgs{
-		"tagIDs":   tagIDs,
-		"statusID": domain.StatusPublished,
-	}
-
-	rows, err := r.db.Query(ctx, query, args)
+	tags, err := r.getTagsByIDs(ctx, dao.TagIDs)
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var tags []domain.Tag
-	for rows.Next() {
-		var t domain.Tag
-		if err := rows.Scan(&t.ID, &t.Name); err != nil {
-			return nil, err
-		}
-		tags = append(tags, t)
+		return nil, fmt.Errorf("failed to get tags: %w", err)
 	}
 
-	return tags, rows.Err()
+	news := dao.ToDomain(tags)
+	return &news, nil
 }
