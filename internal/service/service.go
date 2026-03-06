@@ -15,12 +15,14 @@ type NewsRepository interface {
 	GetTags(ctx context.Context) ([]domain.Tag, error)
 }
 
-// newsService реализует domain.Service
-type newsService struct {
+// NewsService реализует domain.Service
+type NewsService struct {
 	repo NewsRepository
 }
 
 // New создаёт экземпляр сервиса новостей
-func New(repo NewsRepository) *newsService {
-	return &newsService{repo: repo}
+func New(repo NewsRepository) *NewsService {
+	return &NewsService{
+		repo: repo,
+	}
 }
