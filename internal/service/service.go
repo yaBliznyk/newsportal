@@ -6,6 +6,8 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
+//go:generate go tool mockery --name=NewsRepository --output=mocks --outpkg=mocks --with-expecter
+
 // NewsRepository интерфейс репозитория для работы с данными новостей
 type NewsRepository interface {
 	ListNews(ctx context.Context, req domain.ListNewsReq) ([]domain.ListNewsItem, error)

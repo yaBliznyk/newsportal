@@ -1,10 +1,22 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/yaBliznyk/newsportal/internal/svcerrs"
+)
 
 // GetNewsReq параметры запроса конкретной новости
 type GetNewsReq struct {
 	ID int // Идентификатор новости
+}
+
+// Validate проверяет корректность параметров запроса.
+func (r GetNewsReq) Validate() error {
+	if r.ID <= 0 {
+		return svcerrs.NewInvalidFieldError("id", "must be positive")
+	}
+	return nil
 }
 
 // News полный формат новости (с content)

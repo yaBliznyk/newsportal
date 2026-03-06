@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
@@ -14,7 +16,7 @@ func (r *NewsRepository) GetCategories(ctx context.Context) ([]domain.Category, 
 		ORDER BY "sortOrder", "name"
 	`
 
-	args := map[string]any{"statusID": domain.StatusPublished}
+	args := pgx.NamedArgs{"statusID": domain.StatusPublished}
 
 	rows, err := r.db.Query(ctx, query, args)
 	if err != nil {
