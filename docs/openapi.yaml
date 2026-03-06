@@ -255,7 +255,6 @@ components:
         - ID
         - Title
         - Preamble
-        - Content
         - Category
         - Author
         - CreatedAt
