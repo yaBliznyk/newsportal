@@ -1,4 +1,4 @@
-package service
+package portal
 
 import (
 	"context"
@@ -17,14 +17,14 @@ type NewsRepository interface {
 	GetTags(ctx context.Context) ([]domain.Tag, error)
 }
 
-// NewsService реализует domain.Service
-type NewsService struct {
+// NewsManager реализует domain.Service
+type NewsManager struct {
 	repo NewsRepository
 }
 
-// New создаёт экземпляр сервиса новостей
-func New(repo NewsRepository) *NewsService {
-	return &NewsService{
+// NewNewsManager создаёт экземпляр сервиса новостей
+func NewNewsManager(repo NewsRepository) *NewsManager {
+	return &NewsManager{
 		repo: repo,
 	}
 }

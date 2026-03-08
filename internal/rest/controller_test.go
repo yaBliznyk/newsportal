@@ -1,4 +1,4 @@
-package public_test
+package rest_test
 
 import (
 	"encoding/json"
@@ -16,7 +16,6 @@ import (
 
 	"github.com/yaBliznyk/newsportal/internal/domain"
 	"github.com/yaBliznyk/newsportal/internal/domain/mocks"
-	"github.com/yaBliznyk/newsportal/internal/endpoints/public"
 	"github.com/yaBliznyk/newsportal/internal/svcerrs"
 )
 
@@ -27,7 +26,7 @@ var fixedTime = time.Date(2024, 6, 15, 12, 30, 0, 0, time.UTC)
 func setupController(t *testing.T) (*mocks.Service, *http.ServeMux) {
 	mockSvc := mocks.NewService(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil)) // discard logs
-	ctrl := public.NewController(log, mockSvc)
+	ctrl := rest.NewNewsHandler(log, mockSvc)
 
 	mux := http.NewServeMux()
 	ctrl.Init(mux)

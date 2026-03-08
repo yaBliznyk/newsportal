@@ -1,4 +1,4 @@
-package public
+package rest
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 )
 
 // countNews обрабатывает GET /v1/countNews
-func (c *Controller) countNews(w http.ResponseWriter, r *http.Request) {
+func (c *NewsHandler) countNews(w http.ResponseWriter, r *http.Request) {
 	req := domain.CountNewsReq{}
 
 	if v := r.URL.Query().Get("category"); v != "" {
@@ -33,7 +33,7 @@ func (c *Controller) countNews(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp, err := c.svc.CountNews(r.Context(), req)
+	resp, err := c.newsManager.CountNews(r.Context(), req)
 	if err != nil {
 		c.log.Error("CountNews failed", "error", err)
 		c.writeError(w, err)

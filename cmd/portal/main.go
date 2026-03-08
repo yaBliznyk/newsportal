@@ -13,8 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/yaBliznyk/newsportal/internal/config"
-	"github.com/yaBliznyk/newsportal/internal/endpoints/public"
-	"github.com/yaBliznyk/newsportal/internal/repository"
+	"github.com/yaBliznyk/newsportal/internal/db"
+	"github.com/yaBliznyk/newsportal/internal/portal"
+	"github.com/yaBliznyk/newsportal/internal/rest"
 	"github.com/yaBliznyk/newsportal/internal/service"
 )
 
@@ -48,12 +49,13 @@ func main() {
 	log.Info("Successfully connected to PostgreSQL")
 
 	// Инициализация слоёв приложения
-	repo := repository.New(pool)
-	svc := service.New(repo)
+	repo := db.NewNewsRepo(pool)
+	_ = db.News{}
+	newsManager := portal.NewNewsManager(repo)
 
 	// Инициализация HTTP-сервера
 	mux := http.NewServeMux()
-	ctrl := public.NewController(log, svc)
+	ctrl := rest.NewNewsHandler(log, newsManager)
 	ctrl.Init(mux)
 
 	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: mux}

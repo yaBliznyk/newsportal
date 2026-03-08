@@ -1,4 +1,4 @@
-package public
+package rest
 
 import (
 	"net/http"
@@ -9,14 +9,14 @@ import (
 )
 
 // getNews обрабатывает GET /v1/getNews
-func (c *Controller) getNews(w http.ResponseWriter, r *http.Request) {
+func (c *NewsHandler) getNews(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
 		c.writeError(w, svcerrs.ErrInvalidData)
 		return
 	}
 
-	resp, err := c.svc.GetNews(r.Context(), domain.GetNewsReq{ID: id})
+	resp, err := c.newsManager.GetNews(r.Context(), domain.GetNewsReq{ID: id})
 	if err != nil {
 		c.log.Error("GetNews failed", "error", err, "id", id)
 		c.writeError(w, err)

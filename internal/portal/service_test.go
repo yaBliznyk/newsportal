@@ -1,4 +1,4 @@
-package service_test
+package portal_test
 
 import (
 	"errors"
@@ -19,9 +19,9 @@ import (
 var fixedTime = time.Date(2024, 6, 15, 12, 30, 0, 0, time.UTC)
 
 // setupService создает сервис с моком репозитория для тестов
-func setupService(t *testing.T) (*mocks.NewsRepository, *service.NewsService) {
+func setupService(t *testing.T) (*mocks.NewsRepository, *portal.NewsService) {
 	mockRepo := mocks.NewNewsRepository(t)
-	svc := service.New(mockRepo)
+	svc := portal.New(mockRepo)
 	return mockRepo, svc
 }
 

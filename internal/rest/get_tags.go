@@ -1,12 +1,12 @@
-package public
+package rest
 
 import (
 	"net/http"
 )
 
 // getTags обрабатывает GET /v1/getTags
-func (c *Controller) getTags(w http.ResponseWriter, r *http.Request) {
-	resp, err := c.svc.GetTags(r.Context())
+func (c *NewsHandler) getTags(w http.ResponseWriter, r *http.Request) {
+	resp, err := c.newsManager.GetTags(r.Context())
 	if err != nil {
 		c.log.Error("GetTags failed", "error", err)
 		c.writeError(w, err)

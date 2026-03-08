@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
-func (r *NewsRepository) CountNews(ctx context.Context, req domain.CountNewsReq) (int, error) {
+func (r *NewsRepo) CountNews(ctx context.Context, req domain.CountNewsReq) (int, error) {
 	query := `
 		SELECT COUNT(*)
 		FROM "news"

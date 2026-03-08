@@ -1,4 +1,4 @@
-package public
+package rest
 
 import (
 	"encoding/json"
@@ -6,24 +6,26 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/yaBliznyk/newsportal/internal/domain"
+	"github.com/yaBliznyk/newsportal/internal/portal"
+	"github.com/yaBliznyk/newsportal/internal/portal/user"
 	"github.com/yaBliznyk/newsportal/internal/svcerrs"
 )
 
-type Controller struct {
-	log *slog.Logger
-	svc domain.Service
+type NewsHandler struct {
+	log         *slog.Logger
+	newsManager *portal.NewsManager
+	userManager *user.Manager
 }
 
-func NewController(log *slog.Logger, svc domain.Service) *Controller {
-	return &Controller{
-		log: log,
-		svc: svc,
+func NewNewsHandler(log *slog.Logger, svc *portal.NewsManager) *NewsHandler {
+	return &NewsHandler{
+		log:         log,
+		newsManager: svc,
 	}
 }
 
 // Init регистрирует роуты на стандартном http.ServeMux
-func (c *Controller) Init(mux *http.ServeMux) {
+func (c *NewsHandler) Init(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/listNews", c.listNews)
 	mux.HandleFunc("GET /v1/countNews", c.countNews)
 	mux.HandleFunc("GET /v1/getNews", c.getNews)
@@ -32,7 +34,7 @@ func (c *Controller) Init(mux *http.ServeMux) {
 }
 
 // writeJSON отправляет JSON-ответ
-func (c *Controller) writeJSON(w http.ResponseWriter, data any) {
+func (c *NewsHandler) writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -40,7 +42,7 @@ func (c *Controller) writeJSON(w http.ResponseWriter, data any) {
 }
 
 // writeError отправляет ошибку
-func (c *Controller) writeError(w http.ResponseWriter, err error) {
+func (c *NewsHandler) writeError(w http.ResponseWriter, err error) {
 	code := http.StatusInternalServerError
 	msg := "internal server error"
 

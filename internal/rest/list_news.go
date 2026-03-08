@@ -1,4 +1,4 @@
-package public
+package rest
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 )
 
 // listNews обрабатывает GET /v1/listNews
-func (c *Controller) listNews(w http.ResponseWriter, r *http.Request) {
+func (c *NewsHandler) listNews(w http.ResponseWriter, r *http.Request) {
 	req := domain.ListNewsReq{
 		Page:  1,
 		Limit: 20,
@@ -46,7 +46,7 @@ func (c *Controller) listNews(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp, err := c.svc.ListNews(r.Context(), req)
+	resp, err := c.newsManager.ListNews(r.Context(), req)
 	if err != nil {
 		c.log.Error("ListNews failed", "error", err)
 		c.writeError(w, err)

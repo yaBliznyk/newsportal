@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
-func (r *NewsRepository) ListNews(ctx context.Context, req domain.ListNewsReq) ([]domain.ListNewsItem, error) {
+func (r *NewsRepo) ListNews(ctx context.Context, req domain.ListNewsReq) ([]domain.ListNewsItem, error) {
 	query := `
 		SELECT n."newsId", n."title",
 		       c."categoryId", c."name",

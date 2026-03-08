@@ -1,4 +1,4 @@
-package repository_test
+package db_test
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ const (
 const testDBConfig = "postgres://test:test@localhost:5432/test?sslmode=disable"
 
 // setupTestDB создает подключение к БД и возвращает репозиторий
-func setupTestDB(t *testing.T) *repository.NewsRepository {
+func setupTestDB(t *testing.T) *db.NewsRepo {
 	ctx := t.Context()
 
 	pool, err := pgxpool.New(ctx, testDBConfig)
@@ -44,7 +44,7 @@ func setupTestDB(t *testing.T) *repository.NewsRepository {
 		pool.Close()
 	})
 
-	return repository.New(pool)
+	return db.NewNewsRepo(pool)
 }
 
 // clearNews очищает таблицу новостей перед тестом
@@ -262,7 +262,7 @@ func TestListNews_FilterByDateRange(t *testing.T) {
 	// Создаём новости с разными датами публикации
 	insertNews(t, "Old News", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
 	insertNews(t, "Middle News", categoryTech, []int32{tagAI}, "Author", "2024-06-15 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "New News", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "NewNewsRepo News", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 
 	from := time.Date(2024, 6, 12, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 6, 18, 23, 59, 59, 0, time.UTC)
@@ -284,7 +284,7 @@ func TestListNews_FilterByFromDate(t *testing.T) {
 	clearNews(t)
 
 	insertNews(t, "Old News", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "New News", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "NewNewsRepo News", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 
 	from := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
 
@@ -296,7 +296,7 @@ func TestListNews_FilterByFromDate(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, news, 1)
-	assert.Equal(t, "New News", news[0].Title)
+	assert.Equal(t, "NewNewsRepo News", news[0].Title)
 }
 
 func TestListNews_FilterByToDate(t *testing.T) {
@@ -304,7 +304,7 @@ func TestListNews_FilterByToDate(t *testing.T) {
 	clearNews(t)
 
 	insertNews(t, "Old News", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "New News", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "NewNewsRepo News", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 
 	to := time.Date(2024, 6, 15, 23, 59, 59, 0, time.UTC)
 
@@ -373,7 +373,7 @@ func TestListNews_CombinedFilters(t *testing.T) {
 
 	// Создаём новости с разными параметрами
 	insertNews(t, "Tech AI Old", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "Tech AI New", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "Tech AI NewNewsRepo", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 	insertNews(t, "Business AI", categoryBusiness, []int32{tagAI}, "Author", "2024-06-15 12:00:00", int(domain.StatusPublished))
 	insertNews(t, "Tech Startups", categoryTech, []int32{tagStartups}, "Author", "2024-06-15 12:00:00", int(domain.StatusPublished))
 
@@ -477,7 +477,7 @@ func TestCountNews_FilterByDateRange(t *testing.T) {
 
 	insertNews(t, "Old", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
 	insertNews(t, "Middle", categoryTech, []int32{tagAI}, "Author", "2024-06-15 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "New", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "NewNewsRepo", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 
 	from := time.Date(2024, 6, 12, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 6, 18, 23, 59, 59, 0, time.UTC)
@@ -496,7 +496,7 @@ func TestCountNews_FilterByFromDate(t *testing.T) {
 	clearNews(t)
 
 	insertNews(t, "Old", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "New", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "NewNewsRepo", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 
 	from := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
 
@@ -513,7 +513,7 @@ func TestCountNews_FilterByToDate(t *testing.T) {
 	clearNews(t)
 
 	insertNews(t, "Old", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "New", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "NewNewsRepo", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 
 	to := time.Date(2024, 6, 15, 23, 59, 59, 0, time.UTC)
 
@@ -530,7 +530,7 @@ func TestCountNews_CombinedFilters(t *testing.T) {
 	clearNews(t)
 
 	insertNews(t, "Tech AI Old", categoryTech, []int32{tagAI}, "Author", "2024-06-10 12:00:00", int(domain.StatusPublished))
-	insertNews(t, "Tech AI New", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
+	insertNews(t, "Tech AI NewNewsRepo", categoryTech, []int32{tagAI}, "Author", "2024-06-20 12:00:00", int(domain.StatusPublished))
 	insertNews(t, "Business AI", categoryBusiness, []int32{tagAI}, "Author", "2024-06-15 12:00:00", int(domain.StatusPublished))
 	insertNews(t, "Tech Startups", categoryTech, []int32{tagStartups}, "Author", "2024-06-15 12:00:00", int(domain.StatusPublished))
 

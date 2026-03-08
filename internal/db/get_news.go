@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/svcerrs"
 )
 
-func (r *NewsRepository) GetNews(ctx context.Context, id int) (*domain.News, error) {
+func (r *NewsRepo) GetNews(ctx context.Context, id int) (*domain.News, error) {
 	const query = `
 		SELECT n."newsId", n."title", n."preamble", n."content",
 		       c."categoryId", c."name",
@@ -26,7 +26,7 @@ func (r *NewsRepository) GetNews(ctx context.Context, id int) (*domain.News, err
 		"statusID": domain.StatusPublished,
 	}
 
-	var dao NewsDAO
+	var dao News
 	err := r.db.QueryRow(ctx, query, args).Scan(
 		&dao.ID,
 		&dao.Title,

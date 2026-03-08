@@ -1,4 +1,4 @@
-package service
+package portal
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
-func (s *NewsService) ListNews(ctx context.Context, req domain.ListNewsReq) (*domain.ListNewsResp, error) {
+func (s *NewsManager) ListNews(ctx context.Context, req domain.ListNewsReq) (*domain.ListNewsResp, error) {
 	if err := req.Validate(); err != nil {
 		return nil, fmt.Errorf("req.Validate: %w", err)
 	}

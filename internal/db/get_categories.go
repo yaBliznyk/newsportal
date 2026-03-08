@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
-func (r *NewsRepository) GetCategories(ctx context.Context) ([]domain.Category, error) {
+func (r *NewsRepo) GetCategories(ctx context.Context) ([]domain.Category, error) {
 	const query = `
 		SELECT "categoryId", "name"
 		FROM "categories"

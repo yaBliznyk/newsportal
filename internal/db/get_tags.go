@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
-func (r *NewsRepository) GetTags(ctx context.Context) ([]domain.Tag, error) {
+func (r *NewsRepo) GetTags(ctx context.Context) ([]domain.Tag, error) {
 	const query = `
 		SELECT "tagId", "name"
 		FROM "tags"
@@ -38,7 +38,7 @@ func (r *NewsRepository) GetTags(ctx context.Context) ([]domain.Tag, error) {
 	return tags, rows.Err()
 }
 
-func (r *NewsRepository) getTagsByIDs(ctx context.Context, tagIDs []int32) ([]domain.Tag, error) {
+func (r *NewsRepo) getTagsByIDs(ctx context.Context, tagIDs []int32) ([]domain.Tag, error) {
 	tagsMap, err := r.getTagsMapByIDs(ctx, tagIDs)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (r *NewsRepository) getTagsByIDs(ctx context.Context, tagIDs []int32) ([]do
 }
 
 // getTagsMapByIDs возвращает мапу тегов по их ID (для избежания N+1 запросов)
-func (r *NewsRepository) getTagsMapByIDs(ctx context.Context, tagIDs []int32) (map[int32]domain.Tag, error) {
+func (r *NewsRepo) getTagsMapByIDs(ctx context.Context, tagIDs []int32) (map[int32]domain.Tag, error) {
 	query := `
 		SELECT "tagId", "name"
 		FROM "tags"

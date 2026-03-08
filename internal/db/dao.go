@@ -1,4 +1,4 @@
-package repository
+package db
 
 import (
 	"time"
@@ -6,8 +6,8 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/domain"
 )
 
-// NewsDAO модель новости для работы с БД
-type NewsDAO struct {
+// News модель новости для работы с БД
+type News struct {
 	ID          int32
 	Title       string
 	Preamble    string
@@ -21,7 +21,7 @@ type NewsDAO struct {
 }
 
 // ToDomain преобразует DAO в доменную модель
-func (n NewsDAO) ToDomain(tags []domain.Tag) domain.News {
+func (n News) ToDomain(tags []domain.Tag) domain.News {
 	return domain.News{
 		ID:          int(n.ID),
 		Title:       n.Title,
