@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	ErrInvalidData       = errors.New("invalid data")
 	ErrInvalidCategoryID = errors.New("invalid category id")
 	ErrInvalidPage       = errors.New("invalid page number")
 	ErrInvalidLimit      = errors.New("invalid limit")

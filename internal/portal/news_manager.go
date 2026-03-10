@@ -41,24 +41,14 @@ func (s *NewsManager) GetNews(ctx context.Context, id int) (*News, error) {
 		return nil, fmt.Errorf("get category by id: %w", err)
 	}
 
-	// Получаем опубликованные теги
+	// Получаем опубликованные теги новости
 	var tags []Tag
 	if len(news.TagIDs) > 0 {
-		allTags, err := s.repo.GetTagsByStatusID(ctx, db.StatusPublished)
+		dbTags, err := s.repo.GetTagsByIDsAndStatusID(ctx, news.TagIDs, db.StatusPublished)
 		if err != nil {
-			return nil, fmt.Errorf("get tags: %w", err)
+			return nil, fmt.Errorf("get tags by ids: %w", err)
 		}
-
-		tagMap := make(map[int]db.Tag, len(allTags))
-		for _, t := range allTags {
-			tagMap[t.ID] = t
-		}
-
-		for _, tagID := range news.TagIDs {
-			if t, ok := tagMap[tagID]; ok {
-				tags = append(tags, Tag{ID: t.ID, Name: t.Name})
-			}
-		}
+		tags = NewTags(dbTags)
 	}
 
 	return &News{
@@ -80,20 +70,22 @@ func (s *NewsManager) ListNews(ctx context.Context, filter PagedListNewsFilter) 
 		return nil, fmt.Errorf("validate filter: %w", err)
 	}
 
-	// Получаем категорию, по которой будет идти поиск
-	category, err := s.repo.GetCategoryByIDAndStatusID(ctx, filter.CategoryID, db.StatusPublished)
-	if err != nil {
-		if errors.Is(err, db.ErrCategoryNotFound) {
-			return nil, ErrCategoryNotFound
+	// Проверяем категорию фильтра, если указана
+	if filter.CategoryID != 0 {
+		_, err := s.repo.GetCategoryByIDAndStatusID(ctx, filter.CategoryID, db.StatusPublished)
+		if err != nil {
+			if errors.Is(err, db.ErrCategoryNotFound) {
+				return nil, ErrCategoryNotFound
+			}
+			return nil, fmt.Errorf("get category by id and statusID: %w", err)
 		}
-		return nil, fmt.Errorf("get category by id and statusID: %w", err)
 	}
 
 	// Получаем список новостей
 	news, err := s.repo.ListNewsByFilter(ctx, db.PagedListNewsFilter{
 		ListNewsFilter: db.ListNewsFilter{
 			StatusID:   db.StatusPublished,
-			CategoryID: category.ID,
+			CategoryID: filter.CategoryID,
 			TagID:      filter.TagID,
 			From:       filter.From,
 			To:         filter.To,
@@ -105,42 +97,70 @@ func (s *NewsManager) ListNews(ctx context.Context, filter PagedListNewsFilter) 
 		return nil, fmt.Errorf("list news by filter: %w", err)
 	}
 
+	if len(news) == 0 {
+		return nil, nil
+	}
+
+	// Получаем уникальные идентификаторы категорий из новостей
+	categoryIDs := uniqNewsCategoryIDs(news)
+
+	// Получаем опубликованные категории
+	categories, err := s.repo.GetCategoriesByIDsAndStatusID(ctx, categoryIDs, db.StatusPublished)
+	if err != nil {
+		return nil, fmt.Errorf("get categories by ids: %w", err)
+	}
+
+	// Строим маппу категорий по ID
+	categoryMap := make(map[int]db.Category, len(categories))
+	for _, cat := range categories {
+		categoryMap[cat.ID] = cat
+	}
+
 	// Получаем уникальные идентификаторы тегов из новостей
 	tagIDs := uniqNewsTagIDs(news)
 
-	if len(tagIDs) == 0 {
-		result := make([]ShortNews, 0, len(news))
-		for _, n := range news {
-			result = append(result, NewShortNews(n, *category, nil))
-		}
-		return result, nil
-	}
-
-	// Получаем все опубликованные теги
-	allTags, err := s.repo.GetTagsByStatusID(ctx, db.StatusPublished)
-	if err != nil {
-		return nil, fmt.Errorf("get tags: %w", err)
-	}
-
 	// Строим маппу тегов по ID
-	tagMap := make(map[int]db.Tag, len(allTags))
-	for _, tag := range allTags {
-		tagMap[tag.ID] = tag
+	tagMap := make(map[int]db.Tag, len(tagIDs))
+	if len(tagIDs) > 0 {
+		tags, err := s.repo.GetTagsByIDsAndStatusID(ctx, tagIDs, db.StatusPublished)
+		if err != nil {
+			return nil, fmt.Errorf("get tags by ids: %w", err)
+		}
+		for _, tag := range tags {
+			tagMap[tag.ID] = tag
+		}
 	}
 
 	// Собираем список коротких новостей
 	result := make([]ShortNews, 0, len(news))
 	for _, n := range news {
-		var tags []db.Tag
+		cat, ok := categoryMap[n.CategoryID]
+		if !ok {
+			continue
+		}
+
+		var nTags []db.Tag
 		for _, tagID := range n.TagIDs {
 			if tag, ok := tagMap[tagID]; ok {
-				tags = append(tags, tag)
+				nTags = append(nTags, tag)
 			}
 		}
-		result = append(result, NewShortNews(n, *category, tags))
+		result = append(result, NewShortNews(n, cat, nTags))
 	}
 
 	return result, nil
+}
+
+func uniqNewsCategoryIDs(news []db.ListNews) []int {
+	seen := make(map[int]struct{})
+	var result []int
+	for _, n := range news {
+		if _, ok := seen[n.CategoryID]; !ok {
+			seen[n.CategoryID] = struct{}{}
+			result = append(result, n.CategoryID)
+		}
+	}
+	return result
 }
 
 func uniqNewsTagIDs(news []db.ListNews) []int {
@@ -163,13 +183,15 @@ func (s *NewsManager) CountNews(ctx context.Context, filter ListNewsFilter) (int
 		return 0, fmt.Errorf("validate filter: %w", err)
 	}
 
-	// Получаем категорию, по которой будет идти поиск
-	_, err := s.repo.GetCategoryByIDAndStatusID(ctx, filter.CategoryID, db.StatusPublished)
-	if err != nil {
-		if errors.Is(err, db.ErrCategoryNotFound) {
-			return 0, ErrCategoryNotFound
+	// Проверяем категорию фильтра, если указана
+	if filter.CategoryID != 0 {
+		_, err := s.repo.GetCategoryByIDAndStatusID(ctx, filter.CategoryID, db.StatusPublished)
+		if err != nil {
+			if errors.Is(err, db.ErrCategoryNotFound) {
+				return 0, ErrCategoryNotFound
+			}
+			return 0, fmt.Errorf("get category by id and statusID: %w", err)
 		}
-		return 0, fmt.Errorf("get category by id and statusID: %w", err)
 	}
 
 	// Получаем число новостей по фильтру

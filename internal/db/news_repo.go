@@ -60,7 +60,7 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter PagedListNewsFil
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByPos[ListNews])
+	return pgx.CollectRows(rows, pgx.RowToStructByName[ListNews])
 }
 
 // CountNews количество новостей по фильтру
@@ -101,19 +101,13 @@ func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID Statu
 		args["statusID"] = statusID
 	}
 
-	var news News
-	err := r.db.QueryRow(ctx, query, args).Scan(
-		&news.ID,
-		&news.Title,
-		&news.Preamble,
-		&news.Content,
-		&news.CategoryID,
-		&news.TagIDs,
-		&news.Author,
-		&news.CreatedAt,
-		&news.PublishedAt,
-		&news.StatusID,
-	)
+	rows, err := r.db.Query(ctx, query, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get news: %w", err)
+	}
+	defer rows.Close()
+
+	news, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[News])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNewsNotFound
@@ -139,13 +133,13 @@ func (r *NewsRepo) GetCategoryByIDAndStatusID(ctx context.Context, id int, statu
 		args["statusID"] = statusID
 	}
 
-	var category Category
-	err := r.db.QueryRow(ctx, query, args).Scan(
-		&category.ID,
-		&category.Name,
-		&category.SortOrder,
-		&category.StatusID,
-	)
+	rows, err := r.db.Query(ctx, query, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get category: %w", err)
+	}
+	defer rows.Close()
+
+	category, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[Category])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrCategoryNotFound
@@ -176,7 +170,65 @@ func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID Status)
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByPos[Category])
+	return pgx.CollectRows(rows, pgx.RowToStructByName[Category])
+}
+
+// GetCategoriesByIDsAndStatusID получение категорий по идентификаторам и статусу
+func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int, statusID Status) ([]Category, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query := `
+		SELECT "categoryId", "name", "sortOrder", "statusId"
+		FROM "categories"
+		WHERE "categoryId" = ANY(@ids)
+	`
+
+	args := pgx.NamedArgs{"ids": ids}
+
+	if statusID != StatusUndefined {
+		query += ` AND "statusId" = @statusID`
+		args["statusID"] = statusID
+	}
+
+	rows, err := r.db.Query(ctx, query, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get categories by ids: %w", err)
+	}
+	defer rows.Close()
+
+	return pgx.CollectRows(rows, pgx.RowToStructByName[Category])
+}
+
+// GetTagsByIDsAndStatusID получение тегов по идентификаторам и статусу
+func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statusID Status) ([]Tag, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query := `
+		SELECT "tagId", "name", "statusId"
+		FROM "tags"
+		WHERE "tagId" = ANY(@ids)
+	`
+
+	args := pgx.NamedArgs{"ids": ids}
+
+	if statusID != StatusUndefined {
+		query += ` AND "statusId" = @statusID`
+		args["statusID"] = statusID
+	}
+
+	query += ` ORDER BY "name"`
+
+	rows, err := r.db.Query(ctx, query, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tags by ids: %w", err)
+	}
+	defer rows.Close()
+
+	return pgx.CollectRows(rows, pgx.RowToStructByName[Tag])
 }
 
 // GetTagsByStatusID получение списка тегов по фильтру
@@ -201,7 +253,7 @@ func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, statusID Status) ([]Ta
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByPos[Tag])
+	return pgx.CollectRows(rows, pgx.RowToStructByName[Tag])
 }
 
 // buildFilterConditions формирует условия фильтрации и именованные аргументы.

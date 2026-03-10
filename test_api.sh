@@ -101,8 +101,8 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "getCategories returns 200"
-check_field "$body" "Categories" "getCategories has Categories"
-check_array_length "$body" "Categories" 5 "getCategories returns 5 categories"
+check_field "$body" "categories" "getCategories has Categories"
+check_array_length "$body" "categories" 5 "getCategories returns 5 categories"
 
 # -------------------------------------------
 # Test 2: GET /v1/getTags
@@ -114,8 +114,8 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "getTags returns 200"
-check_field "$body" "Tags" "getTags has Tags"
-check_array_length "$body" "Tags" 6 "getTags returns 6 tags"
+check_field "$body" "tags" "getTags has Tags"
+check_array_length "$body" "tags" 6 "getTags returns 6 tags"
 
 # -------------------------------------------
 # Test 3: GET /v1/countNews
@@ -127,8 +127,8 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "countNews returns 200"
-check_field "$body" "Count" "countNews has Count"
-check_value "$body" "Count" "3" "countNews returns 3 (published news)"
+check_field "$body" "count" "countNews has Count"
+check_value "$body" "count" "3" "countNews returns 3 (published news)"
 
 # -------------------------------------------
 # Test 4: GET /v1/countNews with filters
@@ -140,7 +140,7 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "countNews with category filter returns 200"
-check_value "$body" "Count" "1" "countNews with category=5 returns 1"
+check_value "$body" "count" "1" "countNews with category=5 returns 1"
 
 # -------------------------------------------
 # Test 5: GET /v1/listNews
@@ -152,8 +152,8 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "listNews returns 200"
-check_field "$body" "News" "listNews has News"
-check_array_length "$body" "News" 3 "listNews returns 3 news"
+check_field "$body" "news" "listNews has News"
+check_array_length "$body" "news" 3 "listNews returns 3 news"
 
 # -------------------------------------------
 # Test 6: GET /v1/listNews with category filter
@@ -165,8 +165,8 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "listNews with category filter returns 200"
-check_array_length "$body" "News" 1 "listNews with category=1 returns 1 news"
-check_value "$body" "News[0].Title" "Прорыв в области искусственного интеллекта" "listNews category filter returns correct news"
+check_array_length "$body" "news" 1 "listNews with category=1 returns 1 news"
+check_value "$body" "news[0].title" "Прорыв в области искусственного интеллекта" "listNews category filter returns correct news"
 
 # -------------------------------------------
 # Test 7: GET /v1/listNews with tag filter
@@ -178,8 +178,8 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "listNews with tag filter returns 200"
-check_array_length "$body" "News" 1 "listNews with tag=5 returns 1 news"
-check_value "$body" "News[0].Title" "Открыта новая экзопланета" "listNews tag filter returns correct news"
+check_array_length "$body" "news" 1 "listNews with tag=5 returns 1 news"
+check_value "$body" "news[0].title" "Открыта новая экзопланета" "listNews tag filter returns correct news"
 
 # -------------------------------------------
 # Test 8: GET /v1/listNews with pagination
@@ -191,7 +191,7 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "listNews with pagination returns 200"
-check_array_length "$body" "News" 2 "listNews with limit=2 returns 2 news"
+check_array_length "$body" "news" 2 "listNews with limit=2 returns 2 news"
 
 # -------------------------------------------
 # Test 9: GET /v1/getNews
@@ -203,13 +203,13 @@ status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "getNews returns 200"
-check_field "$body" "News" "getNews has News"
-check_value "$body" "News.ID" "1" "getNews returns correct ID"
-check_value "$body" "News.Title" "Прорыв в области искусственного интеллекта" "getNews returns correct title"
-check_field "$body" "News.Content" "getNews includes Content"
-check_field "$body" "News.Preamble" "getNews includes Preamble"
-check_field "$body" "News.Category" "getNews includes Category"
-check_field "$body" "News.Tags" "getNews includes Tags"
+check_field "$body" "news" "getNews has News"
+check_value "$body" "news.id" "1" "getNews returns correct ID"
+check_value "$body" "news.title" "Прорыв в области искусственного интеллекта" "getNews returns correct title"
+check_field "$body" "news.content" "getNews includes Content"
+check_field "$body" "news.preamble" "getNews includes Preamble"
+check_field "$body" "news.category" "getNews includes Category"
+check_field "$body" "news.tags" "getNews includes Tags"
 
 # -------------------------------------------
 # Test 10: GET /v1/getNews - not found

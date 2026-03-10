@@ -16,43 +16,43 @@ const (
 
 // News модель новости для работы с БД
 type News struct {
-	ID          int       // Идентификатор новости
-	Title       string    // Заголовок
-	Preamble    string    // Преамбула (краткое описание)
-	Content     string    // Содержимое новости
-	CategoryID  int       // Идентификатор категории
-	TagIDs      []int     // Идентификаторы тегов
-	Author      string    // Автор
-	CreatedAt   time.Time // Дата создания
-	PublishedAt time.Time // Дата публикации
-	StatusID    int       // Идентификатор статуса
+	ID          int       `db:"newsId"`      // Идентификатор новости
+	Title       string    `db:"title"`       // Заголовок
+	Preamble    string    `db:"preamble"`    // Преамбула (краткое описание)
+	Content     string    `db:"content"`     // Содержимое новости
+	CategoryID  int       `db:"categoryId"`  // Идентификатор категории
+	TagIDs      []int     `db:"tagIds"`      // Идентификаторы тегов
+	Author      string    `db:"author"`      // Автор
+	CreatedAt   time.Time `db:"createdAt"`   // Дата создания
+	PublishedAt time.Time `db:"publishedAt"` // Дата публикации
+	StatusID    Status    `db:"statusId"`    // Идентификатор статуса
 }
 
 // ListNews краткая модель новости для списка
 type ListNews struct {
-	ID          int       // Идентификатор новости
-	Title       string    // Заголовок
-	CategoryID  int       // Идентификатор категории
-	TagIDs      []int     // Идентификаторы тегов
-	Author      string    // Автор
-	CreatedAt   time.Time // Дата создания
-	PublishedAt time.Time // Дата публикации
-	StatusID    int       // Идентификатор статуса
+	ID          int       `db:"newsId"`      // Идентификатор новости
+	Title       string    `db:"title"`       // Заголовок
+	CategoryID  int       `db:"categoryId"`  // Идентификатор категории
+	TagIDs      []int     `db:"tagIds"`      // Идентификаторы тегов
+	Author      string    `db:"author"`      // Автор
+	CreatedAt   time.Time `db:"createdAt"`   // Дата создания
+	PublishedAt time.Time `db:"publishedAt"` // Дата публикации
+	StatusID    Status    `db:"statusId"`    // Идентификатор статуса
 }
 
 // Tag модель тега
 type Tag struct {
-	ID       int    // Идентификатор тега
-	Name     string // Название тега
-	StatusID Status // Идентификатор статуса
+	ID       int    `db:"tagId"`    // Идентификатор тега
+	Name     string `db:"name"`     // Название тега
+	StatusID Status `db:"statusId"` // Идентификатор статуса
 }
 
 // Category модель категории
 type Category struct {
-	ID        int    // Идентификатор категории
-	Name      string // Название категории
-	SortOrder int    // Порядок сортировки
-	StatusID  Status // Идентификатор статуса
+	ID        int    `db:"categoryId"` // Идентификатор категории
+	Name      string `db:"name"`       // Название категории
+	SortOrder int    `db:"sortOrder"`  // Порядок сортировки
+	StatusID  Status `db:"statusId"`   // Идентификатор статуса
 }
 
 // PagedListNewsFilter фильтр списка новостей с пагинацией

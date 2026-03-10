@@ -73,7 +73,7 @@ type ListNewsFilter struct {
 
 // Validate проверяет корректность фильтра
 func (f ListNewsFilter) Validate() error {
-	if f.CategoryID <= 0 {
+	if f.CategoryID < 0 {
 		return ErrInvalidCategoryID
 	}
 	if !f.From.IsZero() && !f.To.IsZero() && f.From.After(f.To) {

@@ -16,7 +16,6 @@ import (
 	"github.com/yaBliznyk/newsportal/internal/db"
 	"github.com/yaBliznyk/newsportal/internal/portal"
 	"github.com/yaBliznyk/newsportal/internal/rest"
-	"github.com/yaBliznyk/newsportal/internal/service"
 )
 
 func main() {
@@ -50,15 +49,11 @@ func main() {
 
 	// Инициализация слоёв приложения
 	repo := db.NewNewsRepo(pool)
-	_ = db.News{}
 	newsManager := portal.NewNewsManager(repo)
 
 	// Инициализация HTTP-сервера
-	mux := http.NewServeMux()
 	ctrl := rest.NewNewsHandler(log, newsManager)
-	ctrl.Init(mux)
-
-	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: mux}
+	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: ctrl.Handle()}
 
 	go func() {
 		log.Info("HTTP server starting", "addr", cfg.HTTP.Addr)
