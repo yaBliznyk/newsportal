@@ -2,7 +2,9 @@ package portal
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/yaBliznyk/newsportal/internal/db"
 )
@@ -19,15 +21,71 @@ func NewNewsManager(repo *db.NewsRepo) *NewsManager {
 	}
 }
 
+// GetNews возвращает детали новости
+func (s *NewsManager) GetNews(ctx context.Context, id int) (*News, error) {
+	// Получаем новость по ID со статусом "опубликована"
+	news, err := s.repo.NewsByIDAndStatus(ctx, id, db.StatusPublished)
+	if err != nil {
+		if errors.Is(err, db.ErrNewsNotFound) {
+			return nil, ErrNewsNotFound
+		}
+		return nil, fmt.Errorf("get news by id: %w", err)
+	}
+
+	// Получаем категорию и проверяем что она активна
+	category, err := s.repo.GetCategoryByIDAndStatusID(ctx, news.CategoryID, db.StatusPublished)
+	if err != nil {
+		if errors.Is(err, db.ErrCategoryNotFound) {
+			return nil, ErrCategoryNotFound
+		}
+		return nil, fmt.Errorf("get category by id: %w", err)
+	}
+
+	// Получаем опубликованные теги
+	var tags []Tag
+	if len(news.TagIDs) > 0 {
+		allTags, err := s.repo.GetTagsByStatusID(ctx, db.StatusPublished)
+		if err != nil {
+			return nil, fmt.Errorf("get tags: %w", err)
+		}
+
+		tagMap := make(map[int]db.Tag, len(allTags))
+		for _, t := range allTags {
+			tagMap[t.ID] = t
+		}
+
+		for _, tagID := range news.TagIDs {
+			if t, ok := tagMap[tagID]; ok {
+				tags = append(tags, Tag{ID: t.ID, Name: t.Name})
+			}
+		}
+	}
+
+	return &News{
+		ID:          news.ID,
+		Title:       news.Title,
+		Preamble:    news.Preamble,
+		Content:     news.Content,
+		Category:    Category{ID: category.ID, Name: category.Name},
+		Tags:        tags,
+		Author:      news.Author,
+		CreatedAt:   news.CreatedAt,
+		PublishedAt: news.PublishedAt,
+	}, nil
+}
+
 // ListNews список кратких новостей без текста
 func (s *NewsManager) ListNews(ctx context.Context, filter PagedListNewsFilter) ([]ShortNews, error) {
 	if err := filter.Validate(); err != nil {
-		return nil, fmt.Errorf("filter.Validate: %w", err)
+		return nil, fmt.Errorf("validate filter: %w", err)
 	}
 
 	// Получаем категорию, по которой будет идти поиск
 	category, err := s.repo.GetCategoryByIDAndStatusID(ctx, filter.CategoryID, db.StatusPublished)
 	if err != nil {
+		if errors.Is(err, db.ErrCategoryNotFound) {
+			return nil, ErrCategoryNotFound
+		}
 		return nil, fmt.Errorf("get category by id and statusID: %w", err)
 	}
 
@@ -102,9 +160,19 @@ func uniqNewsTagIDs(news []db.ListNews) []int {
 // CountNews количество новостей по фильтру
 func (s *NewsManager) CountNews(ctx context.Context, filter ListNewsFilter) (int, error) {
 	if err := filter.Validate(); err != nil {
-		return 0, fmt.Errorf("filter.Validate: %w", err)
+		return 0, fmt.Errorf("validate filter: %w", err)
 	}
 
+	// Получаем категорию, по которой будет идти поиск
+	_, err := s.repo.GetCategoryByIDAndStatusID(ctx, filter.CategoryID, db.StatusPublished)
+	if err != nil {
+		if errors.Is(err, db.ErrCategoryNotFound) {
+			return 0, ErrCategoryNotFound
+		}
+		return 0, fmt.Errorf("get category by id and statusID: %w", err)
+	}
+
+	// Получаем число новостей по фильтру
 	count, err := s.repo.CountNews(ctx, db.ListNewsFilter{
 		StatusID:   db.StatusPublished,
 		CategoryID: filter.CategoryID,
@@ -117,4 +185,55 @@ func (s *NewsManager) CountNews(ctx context.Context, filter ListNewsFilter) (int
 	}
 
 	return count, nil
+}
+
+// ListCategories список опубликованных категорий с сортировкой
+func (s *NewsManager) ListCategories(ctx context.Context) ([]Category, error) {
+	categories, err := s.repo.GetCategoriesByStatusID(ctx, db.StatusPublished)
+	if err != nil {
+		return nil, fmt.Errorf("get published categories: %w", err)
+	}
+
+	// Сортируем по SortOrder и имени
+	slices.SortStableFunc(categories, func(a, b db.Category) int {
+		if a.SortOrder != b.SortOrder {
+			return a.SortOrder - b.SortOrder
+		}
+		if a.Name < b.Name {
+			return -1
+		}
+		if a.Name > b.Name {
+			return 1
+		}
+		return 0
+	})
+
+	// Формируем результат
+	resp := make([]Category, 0, len(categories))
+	for _, cat := range categories {
+		resp = append(resp, Category{
+			ID:   cat.ID,
+			Name: cat.Name,
+		})
+	}
+
+	return resp, nil
+}
+
+// ListTags список опубликованных тегов
+func (s *NewsManager) ListTags(ctx context.Context) ([]Tag, error) {
+	tags, err := s.repo.GetTagsByStatusID(ctx, db.StatusPublished)
+	if err != nil {
+		return nil, fmt.Errorf("get published tags: %w", err)
+	}
+
+	resp := make([]Tag, 0, len(tags))
+	for _, t := range tags {
+		resp = append(resp, Tag{
+			ID:   t.ID,
+			Name: t.Name,
+		})
+	}
+
+	return resp, nil
 }

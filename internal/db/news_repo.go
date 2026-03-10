@@ -86,7 +86,7 @@ func (r *NewsRepo) CountNews(ctx context.Context, filter ListNewsFilter) (int, e
 }
 
 // NewsByIDAndStatus получение полной новости по идентификатору и статусу
-func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id, statusID Status) (*News, error) {
+func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID Status) (*News, error) {
 	query := `
 		SELECT n."newsId", n."title", n."preamble", n."content", n."categoryId",
 		       n."tagIds", n."author", n."createdAt", n."publishedAt", n."statusId"
@@ -169,8 +169,6 @@ func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID Status)
 		query += ` WHERE "statusId" = @statusID`
 		args["statusID"] = statusID
 	}
-
-	query += ` ORDER BY "sortOrder", "name"`
 
 	rows, err := r.db.Query(ctx, query, args)
 	if err != nil {

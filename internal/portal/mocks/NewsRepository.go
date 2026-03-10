@@ -84,7 +84,7 @@ func (_m *NewsRepository) GetCategories(ctx context.Context) ([]domain.Category,
 	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetCategories")
+		panic("no return value specified for ListCategories")
 	}
 
 	var r0 []domain.Category
@@ -109,7 +109,7 @@ func (_m *NewsRepository) GetCategories(ctx context.Context) ([]domain.Category,
 	return r0, r1
 }
 
-// NewsRepository_GetCategories_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCategories'
+// NewsRepository_GetCategories_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListCategories'
 type NewsRepository_GetCategories_Call struct {
 	*mock.Call
 }
@@ -117,7 +117,7 @@ type NewsRepository_GetCategories_Call struct {
 // GetCategories is a helper method to define mock.On call
 //   - ctx context.Context
 func (_e *NewsRepository_Expecter) GetCategories(ctx interface{}) *NewsRepository_GetCategories_Call {
-	return &NewsRepository_GetCategories_Call{Call: _e.mock.On("GetCategories", ctx)}
+	return &NewsRepository_GetCategories_Call{Call: _e.mock.On("ListCategories", ctx)}
 }
 
 func (_c *NewsRepository_GetCategories_Call) Run(run func(ctx context.Context)) *NewsRepository_GetCategories_Call {
@@ -201,7 +201,7 @@ func (_m *NewsRepository) GetTags(ctx context.Context) ([]domain.Tag, error) {
 	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetTags")
+		panic("no return value specified for ListTags")
 	}
 
 	var r0 []domain.Tag
@@ -226,7 +226,7 @@ func (_m *NewsRepository) GetTags(ctx context.Context) ([]domain.Tag, error) {
 	return r0, r1
 }
 
-// NewsRepository_GetTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTags'
+// NewsRepository_GetTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListTags'
 type NewsRepository_GetTags_Call struct {
 	*mock.Call
 }
@@ -234,7 +234,7 @@ type NewsRepository_GetTags_Call struct {
 // GetTags is a helper method to define mock.On call
 //   - ctx context.Context
 func (_e *NewsRepository_Expecter) GetTags(ctx interface{}) *NewsRepository_GetTags_Call {
-	return &NewsRepository_GetTags_Call{Call: _e.mock.On("GetTags", ctx)}
+	return &NewsRepository_GetTags_Call{Call: _e.mock.On("ListTags", ctx)}
 }
 
 func (_c *NewsRepository_GetTags_Call) Run(run func(ctx context.Context)) *NewsRepository_GetTags_Call {
