@@ -261,7 +261,7 @@ func (_m *Service) ListNews(ctx context.Context, req domain.ListNewsReq) (*domai
 	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ListNews")
+		panic("no return value specified for ListNewsByFilter")
 	}
 
 	var r0 *domain.ListNewsResp
@@ -286,7 +286,7 @@ func (_m *Service) ListNews(ctx context.Context, req domain.ListNewsReq) (*domai
 	return r0, r1
 }
 
-// Service_ListNews_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListNews'
+// Service_ListNews_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListNewsByFilter'
 type Service_ListNews_Call struct {
 	*mock.Call
 }
@@ -295,7 +295,7 @@ type Service_ListNews_Call struct {
 //   - ctx context.Context
 //   - req domain.ListNewsReq
 func (_e *Service_Expecter) ListNews(ctx interface{}, req interface{}) *Service_ListNews_Call {
-	return &Service_ListNews_Call{Call: _e.mock.On("ListNews", ctx, req)}
+	return &Service_ListNews_Call{Call: _e.mock.On("ListNewsByFilter", ctx, req)}
 }
 
 func (_c *Service_ListNews_Call) Run(run func(ctx context.Context, req domain.ListNewsReq)) *Service_ListNews_Call {

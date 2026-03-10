@@ -48,7 +48,7 @@ func (c *NewsHandler) listNews(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := c.newsManager.ListNews(r.Context(), req)
 	if err != nil {
-		c.log.Error("ListNews failed", "error", err)
+		c.log.Error("ListNewsByFilter failed", "error", err)
 		c.writeError(w, err)
 		return
 	}

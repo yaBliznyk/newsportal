@@ -7,14 +7,12 @@ import (
 	"net/http"
 
 	"github.com/yaBliznyk/newsportal/internal/portal"
-	"github.com/yaBliznyk/newsportal/internal/portal/user"
 	"github.com/yaBliznyk/newsportal/internal/svcerrs"
 )
 
 type NewsHandler struct {
 	log         *slog.Logger
 	newsManager *portal.NewsManager
-	userManager *user.Manager
 }
 
 func NewNewsHandler(log *slog.Logger, svc *portal.NewsManager) *NewsHandler {

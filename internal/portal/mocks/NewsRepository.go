@@ -259,7 +259,7 @@ func (_m *NewsRepository) ListNews(ctx context.Context, req domain.ListNewsReq) 
 	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ListNews")
+		panic("no return value specified for ListNewsByFilter")
 	}
 
 	var r0 []domain.ListNewsItem
@@ -284,7 +284,7 @@ func (_m *NewsRepository) ListNews(ctx context.Context, req domain.ListNewsReq) 
 	return r0, r1
 }
 
-// NewsRepository_ListNews_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListNews'
+// NewsRepository_ListNews_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListNewsByFilter'
 type NewsRepository_ListNews_Call struct {
 	*mock.Call
 }
@@ -293,7 +293,7 @@ type NewsRepository_ListNews_Call struct {
 //   - ctx context.Context
 //   - req domain.ListNewsReq
 func (_e *NewsRepository_Expecter) ListNews(ctx interface{}, req interface{}) *NewsRepository_ListNews_Call {
-	return &NewsRepository_ListNews_Call{Call: _e.mock.On("ListNews", ctx, req)}
+	return &NewsRepository_ListNews_Call{Call: _e.mock.On("ListNewsByFilter", ctx, req)}
 }
 
 func (_c *NewsRepository_ListNews_Call) Run(run func(ctx context.Context, req domain.ListNewsReq)) *NewsRepository_ListNews_Call {
