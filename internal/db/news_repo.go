@@ -7,24 +7,23 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const defaultLimit = 20
 
 // NewsRepo репозиторий новостей
 type NewsRepo struct {
-	db *pgxpool.Pool
+	db *pg.DB
 }
 
 // NewNewsRepo создаёт экземпляр репозитория новостей
-func NewNewsRepo(db *pgxpool.Pool) *NewsRepo {
+func NewNewsRepo(db *pg.DB) *NewsRepo {
 	return &NewsRepo{db: db}
 }
 
 // ListNewsByFilter список сокращенных новостей по фильтру
-func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter PagedListNewsFilter) ([]ListNews, error) {
-	conditions, args := buildFilterConditions(filter.ListNewsFilter, "n")
+func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, pager Pagination) ([]News, error) {
+	conditions, args := buildFilterConditions(filter, "n")
 
 	query := `
 		SELECT n."newsId", n."title", n."categoryId", n."tagIds", 
@@ -38,7 +37,7 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter PagedListNewsFil
 
 	query += ` ORDER BY n."publishedAt" DESC`
 
-	limit := filter.Limit
+	limit := pager.Limit
 	if limit <= 0 {
 		limit = defaultLimit
 	}
@@ -46,7 +45,7 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter PagedListNewsFil
 	query += ` LIMIT @limit`
 	args["limit"] = limit
 
-	page := filter.Page
+	page := pager.Page
 	if page <= 0 {
 		page = 1
 	}
@@ -60,11 +59,11 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter PagedListNewsFil
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[ListNews])
+	return pgx.CollectRows(rows, pgx.RowToStructByName[News])
 }
 
 // CountNews количество новостей по фильтру
-func (r *NewsRepo) CountNews(ctx context.Context, filter ListNewsFilter) (int, error) {
+func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error) {
 	conditions, args := buildFilterConditions(filter, "")
 
 	query := `
@@ -108,10 +107,9 @@ func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID Statu
 	defer rows.Close()
 
 	news, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[News])
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNewsNotFound
-		}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get news: %w", err)
 	}
 
@@ -258,7 +256,7 @@ func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, statusID Status) ([]Ta
 
 // buildFilterConditions формирует условия фильтрации и именованные аргументы.
 // prefix — алиас таблицы (например "n"), если пустой — имена колонок без префикса.
-func buildFilterConditions(filter ListNewsFilter, prefix string) ([]string, pgx.NamedArgs) {
+func buildFilterConditions(filter NewsFilter, prefix string) ([]string, pgx.NamedArgs) {
 	col := func(name string) string {
 		if prefix != "" {
 			return prefix + `."` + name + `"`

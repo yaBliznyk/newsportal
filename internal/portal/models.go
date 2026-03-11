@@ -24,43 +24,66 @@ type News struct {
 	Title       string    // Заголовок новости
 	Preamble    string    // Преамбула (краткое описание)
 	Content     string    // Полный контент новости
-	Category    Category  // Категория новости
-	Tags        []Tag     // Теги новости
 	Author      string    // Автор новости
+	CategoryID  int       // Идентификатор категории
+	TagIDs      []int     // Идентификаторы тегов
 	CreatedAt   time.Time // Дата создания
 	PublishedAt time.Time // Дата публикации
-}
-
-// ShortNews краткая новость для списка новостей
-type ShortNews struct {
-	ID          int       // Идентификатор новости
-	Title       string    // Заголовок новости
-	Category    Category  // Категория новости
+	Category    *Category // Категория новости
 	Tags        []Tag     // Теги новости
-	Author      string    // Автор новости
-	CreatedAt   time.Time // Дата создания
-	PublishedAt time.Time // Дата публикации
 }
 
-// PagedListNewsFilter фильтр списка новостей с пагинацией
-type PagedListNewsFilter struct {
-	ListNewsFilter
+func NewCategory(c *db.Category) *Category {
+	if c == nil {
+		return nil
+	}
+
+	return &Category{
+		ID:   c.ID,
+		Name: c.Name,
+	}
+}
+
+func NewTag(t *db.Tag) *Tag {
+	if t == nil {
+		return nil
+	}
+
+	return &Tag{
+		ID:   t.ID,
+		Name: t.Name,
+	}
+}
+
+func NewNews(n *db.News) *News {
+	if n == nil {
+		return nil
+	}
+
+	return &News{
+		ID:          n.ID,
+		Title:       n.Title,
+		Preamble:    n.Preamble,
+		Content:     n.Content,
+		Author:      n.Author,
+		CategoryID:  n.CategoryID,
+		TagIDs:      n.TagIDs,
+		CreatedAt:   n.CreatedAt,
+		PublishedAt: n.PublishedAt,
+	}
+}
+
+// Pagination пагинация
+type Pagination struct {
 	Page  int // Номер страницы (по умолчанию 1)
 	Limit int // Количество на страницу
 }
 
-// Validate проверяет корректность фильтра с пагинацией
-func (f PagedListNewsFilter) Validate() error {
-	if err := f.ListNewsFilter.Validate(); err != nil {
-		return err
+func (p Pagination) ToDB() db.Pagination {
+	return db.Pagination{
+		Page:  p.Page,
+		Limit: p.Limit,
 	}
-	if f.Page < 0 {
-		return ErrInvalidPage
-	}
-	if f.Limit < 0 {
-		return ErrInvalidLimit
-	}
-	return nil
 }
 
 // ListNewsFilter фильтр новостей
@@ -82,46 +105,12 @@ func (f ListNewsFilter) Validate() error {
 	return nil
 }
 
-func NewCategory(category db.Category) Category {
-	return Category{
-		ID:   category.ID,
-		Name: category.Name,
-	}
-}
-
-func NewTags(tags []db.Tag) []Tag {
-	res := make([]Tag, 0, len(tags))
-	for _, tag := range tags {
-		res = append(res, Tag{
-			ID:   tag.ID,
-			Name: tag.Name,
-		})
-	}
-	return res
-}
-
-func NewShortNews(news db.ListNews, category db.Category, tags []db.Tag) ShortNews {
-	return ShortNews{
-		ID:          news.ID,
-		Title:       news.Title,
-		Category:    NewCategory(category),
-		Tags:        NewTags(tags),
-		Author:      news.Author,
-		CreatedAt:   news.CreatedAt,
-		PublishedAt: news.PublishedAt,
-	}
-}
-
-func NewNews(news db.News, category db.Category, tags []db.Tag) News {
-	return News{
-		ID:          news.ID,
-		Title:       news.Title,
-		Preamble:    news.Preamble,
-		Content:     news.Content,
-		Category:    NewCategory(category),
-		Tags:        NewTags(tags),
-		Author:      news.Author,
-		CreatedAt:   news.CreatedAt,
-		PublishedAt: news.PublishedAt,
+func (f ListNewsFilter) ToDB() db.NewsFilter {
+	return db.NewsFilter{
+		StatusID:   db.StatusPublished,
+		CategoryID: f.CategoryID,
+		TagID:      f.TagID,
+		From:       f.From,
+		To:         f.To,
 	}
 }

@@ -36,7 +36,8 @@ func (c *NewsHandler) Handle() http.Handler {
 
 // listNews обрабатывает GET /v1/listNews
 func (c *NewsHandler) listNews(w http.ResponseWriter, r *http.Request) {
-	filter := portal.PagedListNewsFilter{
+	var filter portal.ListNewsFilter
+	pagination := portal.Pagination{
 		Page:  1,
 		Limit: 20,
 	}
@@ -63,16 +64,16 @@ func (c *NewsHandler) listNews(w http.ResponseWriter, r *http.Request) {
 	}
 	if v := r.URL.Query().Get("page"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
-			filter.Page = p
+			pagination.Page = p
 		}
 	}
 	if v := r.URL.Query().Get("limit"); v != "" {
 		if l, err := strconv.Atoi(v); err == nil && l > 0 {
-			filter.Limit = l
+			pagination.Limit = l
 		}
 	}
 
-	news, err := c.newsManager.ListNews(r.Context(), filter)
+	news, err := c.newsManager.ListNews(r.Context(), filter, pagination)
 	if err != nil {
 		c.log.Error("ListNews failed", "error", err)
 		c.writeError(w, err)

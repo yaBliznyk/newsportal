@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/go-pg/pg/v10"
 
 	"github.com/yaBliznyk/newsportal/internal/config"
 	"github.com/yaBliznyk/newsportal/internal/db"
@@ -33,11 +33,13 @@ func main() {
 	}
 
 	// Инициализация подключения к PostgreSQL
-	pool, err := pgxpool.New(ctx, cfg.Database.URL)
+	opt, err := pg.ParseURL(cfg.Database.URL)
 	if err != nil {
-		log.Error("failed to create connection pool", "error", err)
+		log.Error("failed to parse database url", "error", err)
 		os.Exit(1)
 	}
+
+	pool := pg.Connect(opt)
 	defer pool.Close()
 
 	// Проверка подключения

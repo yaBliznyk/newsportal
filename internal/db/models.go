@@ -26,18 +26,7 @@ type News struct {
 	CreatedAt   time.Time `db:"createdAt"`   // Дата создания
 	PublishedAt time.Time `db:"publishedAt"` // Дата публикации
 	StatusID    Status    `db:"statusId"`    // Идентификатор статуса
-}
-
-// ListNews краткая модель новости для списка
-type ListNews struct {
-	ID          int       `db:"newsId"`      // Идентификатор новости
-	Title       string    `db:"title"`       // Заголовок
-	CategoryID  int       `db:"categoryId"`  // Идентификатор категории
-	TagIDs      []int     `db:"tagIds"`      // Идентификаторы тегов
-	Author      string    `db:"author"`      // Автор
-	CreatedAt   time.Time `db:"createdAt"`   // Дата создания
-	PublishedAt time.Time `db:"publishedAt"` // Дата публикации
-	StatusID    Status    `db:"statusId"`    // Идентификатор статуса
+	Category    *Category `db:"-"`           // Категория
 }
 
 // Tag модель тега
@@ -55,15 +44,14 @@ type Category struct {
 	StatusID  Status `db:"statusId"`   // Идентификатор статуса
 }
 
-// PagedListNewsFilter фильтр списка новостей с пагинацией
-type PagedListNewsFilter struct {
-	ListNewsFilter
+// Pagination пагинация
+type Pagination struct {
 	Page  int // Номер страницы (по умолчанию 1)
 	Limit int // Количество на страницу
 }
 
-// ListNewsFilter фильтр новостей
-type ListNewsFilter struct {
+// NewsFilter фильтр новостей
+type NewsFilter struct {
 	StatusID   Status    // Идентификатор статуса
 	CategoryID int       // Идентификатор категории
 	TagID      int       // Идентификатор тега
