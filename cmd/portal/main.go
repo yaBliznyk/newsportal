@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 
 	"github.com/yaBliznyk/newsportal/internal/config"
 	"github.com/yaBliznyk/newsportal/internal/db"
@@ -54,8 +56,22 @@ func main() {
 	newsManager := portal.NewNewsManager(repo)
 
 	// Инициализация HTTP-сервера
-	ctrl := rest.NewNewsHandler(log, newsManager)
-	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: ctrl.Handle()}
+	newsHandler := rest.NewNewsHandler(log, newsManager)
+
+	// Echo instance
+	e := echo.New()
+
+	// Middleware
+	e.Use(middleware.Recover())
+
+	// Routes
+
+	// Start server
+	if err := e.Start(":8080"); err != nil {
+		slog.Error("failed to start server", "error", err)
+	}
+
+	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: newsHandler.Handle()}
 
 	go func() {
 		log.Info("HTTP server starting", "addr", cfg.HTTP.Addr)

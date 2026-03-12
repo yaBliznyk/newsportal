@@ -28,6 +28,31 @@ type News struct {
 	Tags        []Tag     `json:"tags"`
 }
 
+type ListNewsReq struct {
+	CategoryID int       `query:"category"` // Идентификатор категории
+	TagID      int       `query:"tag"`      // Идентификатор тега
+	From       time.Time `query:"from"`     // Начало периода
+	To         time.Time `query:"to"`       // Конец периода
+	Page       int       `query:"page"`     // Номер страницы
+	Limit      int       `query:"limit"`    // Количество на страницу
+}
+
+func (r ListNewsReq) ToPortalFilter() portal.ListNewsFilter {
+	return portal.ListNewsFilter{
+		CategoryID: r.CategoryID,
+		TagID:      r.TagID,
+		From:       r.From,
+		To:         r.To,
+	}
+}
+
+func (r ListNewsReq) ToPortalPagination() portal.Pagination {
+	return portal.Pagination{
+		Page:  r.Page,
+		Limit: r.Limit,
+	}
+}
+
 type ListNewsResp struct {
 	News []News `json:"news"`
 }
@@ -46,6 +71,10 @@ type GetCategoriesResp struct {
 
 type GetTagsResp struct {
 	Tags []Tag `json:"tags"`
+}
+
+type ErrorResp struct {
+	Error string
 }
 
 func NewCategory(c *portal.Category) *Category {
@@ -80,10 +109,10 @@ func NewNews(n *portal.News) *News {
 		Title:       n.Title,
 		Preamble:    n.Preamble,
 		Content:     n.Content,
-		Category:    NewCategory(n.Category),
 		Author:      n.Author,
 		CreatedAt:   n.CreatedAt,
 		PublishedAt: n.PublishedAt,
+		Category:    NewCategory(n.Category),
 		Tags:        NewTags(n.Tags),
 	}
 }
