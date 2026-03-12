@@ -22,7 +22,7 @@ func NewNewsManager(repo *db.NewsRepo) *NewsManager {
 // GetNews возвращает детали новости
 func (s *NewsManager) GetNews(ctx context.Context, id int) (*News, error) {
 	// Получаем новость по ID со статусом "опубликована"
-	dbNews, err := s.repo.NewsByIDAndStatus(ctx, id, db.StatusPublished)
+	dbNews, err := s.repo.NewsByIDAndStatus(ctx, id, db.StatusPublished, db.StatusPublished)
 	if err != nil {
 		return nil, fmt.Errorf("get news by id: %w", err)
 	} else if dbNews == nil {

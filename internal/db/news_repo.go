@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/go-pg/pg/v10"
 )
 
 const defaultLimit = 20
@@ -23,60 +22,96 @@ func NewNewsRepo(db *pg.DB) *NewsRepo {
 
 // ListNewsByFilter список сокращенных новостей по фильтру
 func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, pager Pagination) ([]News, error) {
-	conditions, args := buildFilterConditions(filter, "n")
+	var news []News
 
-	query := `
-		SELECT n."newsId", n."title", n."categoryId", n."tagIds", 
-		       n."author", n."createdAt", n."publishedAt", n."statusId"
-		FROM "news" n
-	`
+	query := r.db.ModelContext(ctx, &news).
+		ColumnExpr(`n."newsId", n."title", n."categoryId", n."tagIds", n."author", n."createdAt", n."publishedAt", n."statusId"`).
+		TableExpr("news AS n").
+		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
+			if filter.CategoryStatusID != StatusUndefined {
+				return q.Where("c.statusId = ?", filter.CategoryStatusID), nil
+			}
+			return q, nil
+		})
 
-	if len(conditions) > 0 {
-		query += " WHERE " + strings.Join(conditions, " AND ")
+	// Применяем фильтры
+	if filter.StatusID != StatusUndefined {
+		query = query.Where(`n."statusId" = ?`, filter.StatusID)
 	}
 
-	query += ` ORDER BY n."publishedAt" DESC`
+	if filter.CategoryID != 0 {
+		query = query.Where(`n."categoryId" = ?`, filter.CategoryID)
+	}
 
+	if filter.TagID != 0 {
+		query = query.Where(`? = ANY(n."tagIds")`, filter.TagID)
+	}
+
+	if !filter.From.IsZero() {
+		query = query.Where(`n."publishedAt" >= ?`, filter.From)
+	}
+
+	if !filter.To.IsZero() {
+		query = query.Where(`n."publishedAt" <= ?`, filter.To)
+	}
+
+	// Сортировка
+	query = query.Order(`n."publishedAt" DESC`)
+
+	// Пагинация
 	limit := pager.Limit
 	if limit <= 0 {
 		limit = defaultLimit
 	}
-
-	query += ` LIMIT @limit`
-	args["limit"] = limit
+	query = query.Limit(limit)
 
 	page := pager.Page
 	if page <= 0 {
 		page = 1
 	}
+	query = query.Offset((page - 1) * limit)
 
-	query += ` OFFSET @offset`
-	args["offset"] = (page - 1) * limit
-
-	rows, err := r.db.Query(ctx, query, args)
+	err := query.Select()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list news: %w", err)
 	}
-	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[News])
+	return news, nil
 }
 
 // CountNews количество новостей по фильтру
 func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error) {
-	conditions, args := buildFilterConditions(filter, "")
+	query := r.db.ModelContext(ctx, (*News)(nil)).
+		TableExpr("news").
+		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
+			if filter.CategoryStatusID != StatusUndefined {
+				return q.Where("c.statusId = ?", filter.CategoryStatusID), nil
+			}
+			return q, nil
+		})
 
-	query := `
-		SELECT COUNT(*)
-		FROM "news"
-	`
-
-	if len(conditions) > 0 {
-		query += " WHERE " + strings.Join(conditions, " AND ")
+	// Применяем фильтры
+	if filter.StatusID != StatusUndefined {
+		query = query.Where(`"statusId" = ?`, filter.StatusID)
 	}
 
-	var count int
-	err := r.db.QueryRow(ctx, query, args).Scan(&count)
+	if filter.CategoryID != 0 {
+		query = query.Where(`"categoryId" = ?`, filter.CategoryID)
+	}
+
+	if filter.TagID != 0 {
+		query = query.Where(`? = ANY("tagIds")`, filter.TagID)
+	}
+
+	if !filter.From.IsZero() {
+		query = query.Where(`"publishedAt" >= ?`, filter.From)
+	}
+
+	if !filter.To.IsZero() {
+		query = query.Where(`"publishedAt" <= ?`, filter.To)
+	}
+
+	count, err := query.Count()
 	if err != nil {
 		return 0, fmt.Errorf("failed to count news: %w", err)
 	}
@@ -85,90 +120,68 @@ func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error
 }
 
 // NewsByIDAndStatus получение полной новости по идентификатору и статусу
-func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID Status) (*News, error) {
-	query := `
-		SELECT n."newsId", n."title", n."preamble", n."content", n."categoryId",
-		       n."tagIds", n."author", n."createdAt", n."publishedAt", n."statusId"
-		FROM "news" n
-		WHERE n."newsId" = @newsID
-	`
+func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, categoryStatusID Status) (*News, error) {
+	news := &News{}
 
-	args := pgx.NamedArgs{"newsID": id}
+	query := r.db.ModelContext(ctx, news).
+		Where(`"newsId" = ?`, id).
+		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
+			if categoryStatusID != StatusUndefined {
+				return q.Where("c.statusId = ?", categoryStatusID), nil
+			}
+			return q, nil
+		})
 
 	if statusID != StatusUndefined {
-		query += ` AND n."statusId" = @statusID`
-		args["statusID"] = statusID
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	rows, err := r.db.Query(ctx, query, args)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get news: %w", err)
-	}
-	defer rows.Close()
-
-	news, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[News])
-	if errors.Is(err, pgx.ErrNoRows) {
+	err := query.Select()
+	if errors.Is(err, pg.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to get news: %w", err)
 	}
 
-	return &news, nil
+	return news, nil
 }
 
 // GetCategoryByIDAndStatusID получение одной категории по идентификатору и статусу
 func (r *NewsRepo) GetCategoryByIDAndStatusID(ctx context.Context, id int, statusID Status) (*Category, error) {
-	query := `
-		SELECT "categoryId", "name", "sortOrder", "statusId"
-		FROM "categories"
-		WHERE "categoryId" = @categoryID
-	`
+	category := &Category{}
 
-	args := pgx.NamedArgs{"categoryID": id}
+	query := r.db.ModelContext(ctx, category).Where(`"categoryId" = ?`, id)
 
 	if statusID != StatusUndefined {
-		query += ` AND "statusId" = @statusID`
-		args["statusID"] = statusID
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	rows, err := r.db.Query(ctx, query, args)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get category: %w", err)
-	}
-	defer rows.Close()
-
-	category, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[Category])
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrCategoryNotFound
-		}
+	err := query.Select()
+	if errors.Is(err, pg.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get category: %w", err)
 	}
 
-	return &category, nil
+	return category, nil
 }
 
 // GetCategoriesByStatusID получение списка категорий по статусу
 func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID Status) ([]Category, error) {
-	query := `
-		SELECT "categoryId", "name", "sortOrder", "statusId"
-		FROM "categories"
-	`
+	var categories []Category
 
-	args := pgx.NamedArgs{}
+	query := r.db.ModelContext(ctx, &categories)
 
 	if statusID != StatusUndefined {
-		query += ` WHERE "statusId" = @statusID`
-		args["statusID"] = statusID
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	rows, err := r.db.Query(ctx, query, args)
+	err := query.Select()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get categories by status id")
 	}
-	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[Category])
+	return categories, nil
 }
 
 // GetCategoriesByIDsAndStatusID получение категорий по идентификаторам и статусу
@@ -177,26 +190,20 @@ func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int,
 		return nil, nil
 	}
 
-	query := `
-		SELECT "categoryId", "name", "sortOrder", "statusId"
-		FROM "categories"
-		WHERE "categoryId" = ANY(@ids)
-	`
+	var categories []Category
 
-	args := pgx.NamedArgs{"ids": ids}
+	query := r.db.ModelContext(ctx, &categories).Where(`"categoryId" IN (?)`, pg.In(ids))
 
 	if statusID != StatusUndefined {
-		query += ` AND "statusId" = @statusID`
-		args["statusID"] = statusID
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	rows, err := r.db.Query(ctx, query, args)
+	err := query.Select()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get categories by ids: %w", err)
 	}
-	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[Category])
+	return categories, nil
 }
 
 // GetTagsByIDsAndStatusID получение тегов по идентификаторам и статусу
@@ -205,92 +212,40 @@ func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statu
 		return nil, nil
 	}
 
-	query := `
-		SELECT "tagId", "name", "statusId"
-		FROM "tags"
-		WHERE "tagId" = ANY(@ids)
-	`
+	var tags []Tag
 
-	args := pgx.NamedArgs{"ids": ids}
+	query := r.db.ModelContext(ctx, &tags).Where(`"tagId" IN (?)`, pg.In(ids))
 
 	if statusID != StatusUndefined {
-		query += ` AND "statusId" = @statusID`
-		args["statusID"] = statusID
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	query += ` ORDER BY "name"`
+	query = query.Order(`"name" ASC`)
 
-	rows, err := r.db.Query(ctx, query, args)
+	err := query.Select()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tags by ids: %w", err)
 	}
-	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[Tag])
+	return tags, nil
 }
 
 // GetTagsByStatusID получение списка тегов по фильтру
 func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, statusID Status) ([]Tag, error) {
-	query := `
-		SELECT "tagId", "name", "statusId"
-		FROM "tags"
-	`
+	var tags []Tag
 
-	args := pgx.NamedArgs{}
+	query := r.db.ModelContext(ctx, &tags)
 
 	if statusID != StatusUndefined {
-		query += ` WHERE "statusId" = @statusID`
-		args["statusID"] = statusID
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	query += ` ORDER BY "name"`
+	query = query.Order(`"name" ASC`)
 
-	rows, err := r.db.Query(ctx, query, args)
+	err := query.Select()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tags: %w", err)
 	}
-	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[Tag])
-}
-
-// buildFilterConditions формирует условия фильтрации и именованные аргументы.
-// prefix — алиас таблицы (например "n"), если пустой — имена колонок без префикса.
-func buildFilterConditions(filter NewsFilter, prefix string) ([]string, pgx.NamedArgs) {
-	col := func(name string) string {
-		if prefix != "" {
-			return prefix + `."` + name + `"`
-		}
-		return `"` + name + `"`
-	}
-
-	var conditions []string
-	args := pgx.NamedArgs{}
-
-	if filter.StatusID != StatusUndefined {
-		conditions = append(conditions, col("statusId")+" = @statusID")
-		args["statusID"] = filter.StatusID
-	}
-
-	if filter.CategoryID != 0 {
-		conditions = append(conditions, col("categoryId")+" = @categoryID")
-		args["categoryID"] = filter.CategoryID
-	}
-
-	if filter.TagID != 0 {
-		conditions = append(conditions, "@tagID = ANY("+col("tagIds")+")")
-		args["tagID"] = filter.TagID
-	}
-
-	if !filter.From.IsZero() {
-		conditions = append(conditions, col("publishedAt")+" >= @from")
-		args["from"] = filter.From
-	}
-
-	if !filter.To.IsZero() {
-		conditions = append(conditions, col("publishedAt")+" <= @to")
-		args["to"] = filter.To
-	}
-
-	return conditions, args
+	return tags, nil
 }

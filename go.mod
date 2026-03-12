@@ -3,6 +3,7 @@ module github.com/yaBliznyk/newsportal
 go 1.26.0
 
 require (
+	github.com/go-pg/pg/v10 v10.15.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/spf13/viper v1.21.0
@@ -11,7 +12,6 @@ require (
 require (
 	github.com/chigopher/pathlib v0.19.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/go-pg/pg/v10 v10.15.0 // indirect
 	github.com/go-pg/zerochecker v0.2.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect

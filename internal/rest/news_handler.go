@@ -80,7 +80,7 @@ func (c *NewsHandler) listNews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.writeJSON(w, ListNewsResp{News: NewListNewsItems(news)})
+	c.writeJSON(w, ListNewsResp{News: NewNewsList(news)})
 }
 
 // countNews обрабатывает GET /v1/countNews
@@ -133,7 +133,12 @@ func (c *NewsHandler) getNews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.writeJSON(w, GetNewsResp{News: NewNews(*news)})
+	if news == nil {
+		c.writeError(w, portal.ErrNewsNotFound)
+		return
+	}
+
+	c.writeJSON(w, GetNewsResp{News: NewNews(news)})
 }
 
 // getCategories обрабатывает GET /v1/getCategories
@@ -174,8 +179,7 @@ func (c *NewsHandler) writeError(w http.ResponseWriter, err error) {
 	msg := "internal server error"
 
 	switch {
-	case errors.Is(err, portal.ErrNewsNotFound),
-		errors.Is(err, portal.ErrCategoryNotFound):
+	case errors.Is(err, portal.ErrNewsNotFound):
 		code = http.StatusNotFound
 		msg = "not found"
 	case errors.Is(err, portal.ErrInvalidData),

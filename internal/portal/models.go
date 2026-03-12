@@ -107,10 +107,11 @@ func (f ListNewsFilter) Validate() error {
 
 func (f ListNewsFilter) ToDB() db.NewsFilter {
 	return db.NewsFilter{
-		StatusID:   db.StatusPublished,
-		CategoryID: f.CategoryID,
-		TagID:      f.TagID,
-		From:       f.From,
-		To:         f.To,
+		StatusID:         db.StatusPublished,
+		CategoryStatusID: db.StatusPublished,
+		CategoryID:       f.CategoryID,
+		TagID:            f.TagID,
+		From:             f.From,
+		To:               f.To,
 	}
 }
