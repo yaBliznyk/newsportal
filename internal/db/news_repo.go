@@ -25,10 +25,10 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, page
 	var news []News
 
 	query := r.db.ModelContext(ctx, &news).
-		Where("news.\"statusId\" = ?", filter.StatusID).
+		Where(`news."statusId" = ?`, filter.StatusID).
 		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
 			if filter.CategoryStatusID != StatusUndefined {
-				return q.Where("category.\"statusId\" = ?", filter.CategoryStatusID), nil
+				return q.Where(`category."statusId" = ?`, filter.CategoryStatusID), nil
 			}
 			return q, nil
 		})
@@ -70,7 +70,15 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, page
 // CountNews количество новостей по фильтру
 func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error) {
 	query := r.db.ModelContext(ctx, (*News)(nil)).
-		Where("news.\"statusId\" = ?", filter.StatusID)
+		Where(`news."statusId" = ?`, filter.StatusID)
+
+	// Добавляем JOIN с категорией для фильтрации по её статусу
+	if filter.CategoryStatusID != StatusUndefined {
+		query = query.Apply(func(q *pg.Query) (*pg.Query, error) {
+			return q.Join("INNER JOIN categories AS category").JoinOn("category.\"categoryId\" = news.\"categoryId\"").
+				Where(`category."statusId" = ?`, filter.CategoryStatusID), nil
+		})
+	}
 
 	if filter.CategoryID != 0 {
 		query = query.Where(`news."categoryId" = ?`, filter.CategoryID)
@@ -98,10 +106,10 @@ func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, cate
 	news := &News{}
 
 	query := r.db.ModelContext(ctx, news).
-		Where("news.\"newsId\" = ?", id).
+		Where(`news."newsId" = ?`, id).
 		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
 			if categoryStatusID != StatusUndefined {
-				return q.Where("category.\"statusId\" = ?", categoryStatusID), nil
+				return q.Where(`category."statusId" = ?`, categoryStatusID), nil
 			}
 			return q, nil
 		})
@@ -147,7 +155,7 @@ func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID Status)
 	query := r.db.ModelContext(ctx, &categories)
 
 	if statusID != StatusUndefined {
-		query = query.Where("? = ?", pg.Ident("statusId"), statusID)
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
 	err := query.Select()
@@ -166,10 +174,10 @@ func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int,
 
 	var categories []Category
 
-	query := r.db.ModelContext(ctx, &categories).Where("? IN (?)", pg.Ident("categoryId"), pg.In(ids))
+	query := r.db.ModelContext(ctx, &categories).Where(`"categoryId" IN (?)`, pg.In(ids))
 
 	if statusID != StatusUndefined {
-		query = query.Where("? = ?", pg.Ident("statusId"), statusID)
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
 	err := query.Select()
@@ -188,13 +196,13 @@ func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statu
 
 	var tags []Tag
 
-	query := r.db.ModelContext(ctx, &tags).Where("? IN (?)", pg.Ident("tagId"), pg.In(ids))
+	query := r.db.ModelContext(ctx, &tags).Where(`"tagId" IN (?)`, pg.In(ids))
 
 	if statusID != StatusUndefined {
-		query = query.Where("? = ?", pg.Ident("statusId"), statusID)
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	query = query.OrderExpr("? ASC", pg.Ident("name"))
+	query = query.OrderExpr(`"name" ASC`)
 
 	err := query.Select()
 	if err != nil {
@@ -211,10 +219,10 @@ func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, statusID Status) ([]Ta
 	query := r.db.ModelContext(ctx, &tags)
 
 	if statusID != StatusUndefined {
-		query = query.Where("? = ?", pg.Ident("statusId"), statusID)
+		query = query.Where(`"statusId" = ?`, statusID)
 	}
 
-	query = query.OrderExpr("? ASC", pg.Ident("name"))
+	query = query.OrderExpr(`"name" ASC`)
 
 	err := query.Select()
 	if err != nil {

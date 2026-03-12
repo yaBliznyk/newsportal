@@ -376,6 +376,32 @@ check_status 400 "$status" "getNews without id returns 400"
 check_value "$body" "error" "invalid data" "getNews error message is 'invalid data'"
 
 # -------------------------------------------
+# Test 24: GET /v1/countNews vs /v1/listNews consistency
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: CountNews equals ListNews length${NC}"
+count_response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/countNews")
+count_status=$(echo "$count_response" | tail -n1)
+count_body=$(echo "$count_response" | sed '$d')
+count_value=$(echo "$count_body" | jq -r ".count")
+
+list_response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews")
+list_status=$(echo "$list_response" | tail -n1)
+list_body=$(echo "$list_response" | sed '$d')
+list_length=$(echo "$list_body" | jq ".news | length")
+
+check_status 200 "$count_status" "countNews returns 200"
+check_status 200 "$list_status" "listNews returns 200"
+
+if [ "$count_value" -eq "$list_length" ]; then
+    echo -e "${GREEN}✓ PASS${NC}: CountNews ($count_value) equals ListNews length ($list_length)"
+    ((PASSED++))
+else
+    echo -e "${RED}✗ FAIL${NC}: CountNews ($count_value) != ListNews length ($list_length)"
+    ((FAILED++))
+fi
+
+# -------------------------------------------
 # Summary
 # -------------------------------------------
 echo ""
