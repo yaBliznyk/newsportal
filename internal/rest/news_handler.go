@@ -28,7 +28,7 @@ func (h *NewsHandler) Handle() http.Handler {
 	mux := echo.New()
 	mux.GET("/v1/listNews", h.listNews)
 	mux.GET("/v1/countNews", h.countNews)
-	mux.GET("/v1/getNews/:id", h.getNews)
+	mux.GET("/v1/getNews", h.getNews)
 	mux.GET("/v1/getCategories", h.getCategories)
 	mux.GET("/v1/getTags", h.getTags)
 	return mux
