@@ -156,3 +156,6 @@ go run ./cmd/migration reset
 # Статус миграций
 go run ./cmd/migration status
 ```
+
+
+genna model -c "postgres://test:test@localhost:5432/test?sslmode=disable" -o ./internal/db/model_generated.go -t "public.news,categories,tags" -f

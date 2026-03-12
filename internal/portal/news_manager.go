@@ -33,11 +33,10 @@ func (s *NewsManager) GetNews(ctx context.Context, id int) (*News, error) {
 
 	// Получаем опубликованные теги новости
 	if len(news.TagIDs) > 0 {
-		dbTags, err := s.repo.GetTagsByIDsAndStatusID(ctx, news.TagIDs, db.StatusPublished)
+		news.Tags, err = s.ListTags(ctx, news.TagIDs)
 		if err != nil {
 			return nil, fmt.Errorf("get tags by ids: %w", err)
 		}
-		news.Tags = NewTags(dbTags)
 	}
 	return news, nil
 }
@@ -62,11 +61,11 @@ func (s *NewsManager) ListNews(ctx context.Context, filter ListNewsFilter, pager
 	// Заполняем новости тегами
 	tagIDs := nn.UniqueTagIDs()
 	if len(tagIDs) > 0 {
-		dbTags, err := s.repo.GetTagsByIDsAndStatusID(ctx, tagIDs, db.StatusPublished)
+		tags, err := s.ListTags(ctx, tagIDs)
 		if err != nil {
 			return nil, fmt.Errorf("get tags by ids: %w", err)
 		}
-		nn.FillTags(NewTags(dbTags))
+		nn.FillTags(tags)
 	}
 
 	return nn, nil
@@ -98,8 +97,8 @@ func (s *NewsManager) ListCategories(ctx context.Context) ([]Category, error) {
 }
 
 // ListTags список опубликованных тегов
-func (s *NewsManager) ListTags(ctx context.Context) ([]Tag, error) {
-	tt, err := s.repo.GetTagsByStatusID(ctx, db.StatusPublished)
+func (s *NewsManager) ListTags(ctx context.Context, ids []int) ([]Tag, error) {
+	tt, err := s.repo.GetTagsByStatusID(ctx, ids, db.StatusPublished)
 	if err != nil {
 		return nil, fmt.Errorf("get published tags: %w", err)
 	}

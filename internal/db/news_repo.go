@@ -40,10 +40,10 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, page
 		query = query.Where(`? = ANY(news."tagIds")`, filter.TagID)
 	}
 	if !filter.From.IsZero() {
-		query = query.Where("? >= ?", pg.Ident("publishedAt"), filter.From)
+		query = query.Where(`news."publishedAt" >= ?`, filter.From)
 	}
 	if !filter.To.IsZero() {
-		query = query.Where("? <= ?", pg.Ident("publishedAt"), filter.To)
+		query = query.Where(`news."publishedAt" <= ?`, filter.To)
 	}
 	query = query.Order("publishedAt DESC")
 
@@ -70,14 +70,11 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, page
 // CountNews количество новостей по фильтру
 func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error) {
 	query := r.db.ModelContext(ctx, (*News)(nil)).
-		Where(`news."statusId" = ?`, filter.StatusID)
+		Where(`news."statusId" = ?`, filter.StatusID).
+		Relation(Columns.News.Category)
 
-	// Добавляем JOIN с категорией для фильтрации по её статусу
 	if filter.CategoryStatusID != StatusUndefined {
-		query = query.Apply(func(q *pg.Query) (*pg.Query, error) {
-			return q.Join("INNER JOIN categories AS category").JoinOn("category.\"categoryId\" = news.\"categoryId\"").
-				Where(`category."statusId" = ?`, filter.CategoryStatusID), nil
-		})
+		query = query.Where(`category."statusId" = ?`, filter.CategoryStatusID)
 	}
 
 	if filter.CategoryID != 0 {
@@ -87,10 +84,10 @@ func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error
 		query = query.Where(`? = ANY(news."tagIds")`, filter.TagID)
 	}
 	if !filter.From.IsZero() {
-		query = query.Where("? >= ?", pg.Ident("publishedAt"), filter.From)
+		query = query.Where("? >= ?", pg.Ident(Columns.News.PublishedAt), filter.From)
 	}
 	if !filter.To.IsZero() {
-		query = query.Where("? <= ?", pg.Ident("publishedAt"), filter.To)
+		query = query.Where("? <= ?", pg.Ident(Columns.News.PublishedAt), filter.To)
 	}
 
 	count, err := query.Count()
@@ -102,7 +99,7 @@ func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error
 }
 
 // NewsByIDAndStatus получение полной новости по идентификатору и статусу
-func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, categoryStatusID Status) (*News, error) {
+func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, categoryStatusID StatusEnum) (*News, error) {
 	news := &News{}
 
 	query := r.db.ModelContext(ctx, news).
@@ -129,7 +126,7 @@ func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, cate
 }
 
 // GetCategoryByIDAndStatusID получение одной категории по идентификатору и статусу
-func (r *NewsRepo) GetCategoryByIDAndStatusID(ctx context.Context, id int, statusID Status) (*Category, error) {
+func (r *NewsRepo) GetCategoryByIDAndStatusID(ctx context.Context, id int, statusID StatusEnum) (*Category, error) {
 	category := &Category{}
 
 	query := r.db.ModelContext(ctx, category).Where(`"categoryId" = ?`, id)
@@ -149,7 +146,7 @@ func (r *NewsRepo) GetCategoryByIDAndStatusID(ctx context.Context, id int, statu
 }
 
 // GetCategoriesByStatusID получение списка категорий по статусу
-func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID Status) ([]Category, error) {
+func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID StatusEnum) ([]Category, error) {
 	var categories []Category
 
 	query := r.db.ModelContext(ctx, &categories)
@@ -167,7 +164,7 @@ func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID Status)
 }
 
 // GetCategoriesByIDsAndStatusID получение категорий по идентификаторам и статусу
-func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int, statusID Status) ([]Category, error) {
+func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int, statusID StatusEnum) ([]Category, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -189,7 +186,7 @@ func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int,
 }
 
 // GetTagsByIDsAndStatusID получение тегов по идентификаторам и статусу
-func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statusID Status) ([]Tag, error) {
+func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statusID StatusEnum) ([]Tag, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -213,10 +210,14 @@ func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statu
 }
 
 // GetTagsByStatusID получение списка тегов по фильтру
-func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, statusID Status) ([]Tag, error) {
+func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, ids []int, statusID StatusEnum) ([]Tag, error) {
 	var tags []Tag
 
 	query := r.db.ModelContext(ctx, &tags)
+
+	if len(ids) > 0 {
+		query = query.Where(`"tagId" IN (?)`, pg.In(ids))
+	}
 
 	if statusID != StatusUndefined {
 		query = query.Where(`"statusId" = ?`, statusID)

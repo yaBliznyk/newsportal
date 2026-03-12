@@ -103,7 +103,7 @@ func (h *NewsHandler) getCategories(c *echo.Context) error {
 
 // getTags обрабатывает GET /v1/getTags
 func (h *NewsHandler) getTags(c *echo.Context) error {
-	tags, err := h.newsManager.ListTags(c.Request().Context())
+	tags, err := h.newsManager.ListTags(c.Request().Context(), []int{})
 	if err != nil {
 		h.log.Error("ListTags failed", "error", err)
 		return h.sendJsonError(c, err)
