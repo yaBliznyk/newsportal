@@ -70,6 +70,7 @@ func NewNews(n *db.News) *News {
 		TagIDs:      n.TagIDs,
 		CreatedAt:   n.CreatedAt,
 		PublishedAt: n.PublishedAt,
+		Category:    NewCategory(n.Category),
 	}
 }
 

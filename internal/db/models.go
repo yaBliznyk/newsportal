@@ -16,35 +16,35 @@ const (
 
 // News модель новости для работы с БД
 type News struct {
-	tableName   struct{}  `pg:"news,alias:n"`
-	ID          int       `pg:"newsId,pk"`    // Идентификатор новости
-	Title       string    `pg:"title"`        // Заголовок
-	Preamble    string    `pg:"preamble"`     // Преамбула (краткое описание)
-	Content     string    `pg:"content"`      // Содержимое новости
-	CategoryID  int       `pg:"categoryId"`   // Идентификатор категории
-	TagIDs      []int     `pg:"tagIds,array"` // Идентификаторы тегов
-	Author      string    `pg:"author"`       // Автор
-	CreatedAt   time.Time `pg:"createdAt"`    // Дата создания
-	PublishedAt time.Time `pg:"publishedAt"`  // Дата публикации
-	StatusID    Status    `pg:"statusId"`     // Идентификатор статуса
-	Category    *Category `pg:"rel:has-one"`  // Категория
+	tableName   struct{}  `pg:"news"`
+	ID          int       `pg:"newsId,pk"`                      // Идентификатор новости
+	Title       string    `pg:"title"`                          // Заголовок
+	Preamble    string    `pg:"preamble"`                       // Преамбула (краткое описание)
+	Content     string    `pg:"content"`                        // Содержимое новости
+	CategoryID  int       `pg:"categoryId"`                     // Идентификатор категории
+	TagIDs      []int     `pg:"tagIds,array"`                   // Идентификаторы тегов
+	Author      string    `pg:"author"`                         // Автор
+	CreatedAt   time.Time `pg:"createdAt"`                      // Дата создания
+	PublishedAt time.Time `pg:"publishedAt"`                    // Дата публикации
+	StatusID    Status    `pg:"statusId"`                       // Идентификатор статуса
+	Category    *Category `pg:"rel:has-one,join_fk:categoryId"` // Категория
 }
 
 // Tag модель тега
 type Tag struct {
 	tableName struct{} `pg:"tags,alias:t"`
-	ID        int      `pg:"tagId"`    // Идентификатор тега
+	ID        int      `pg:"tagId,pk"` // Идентификатор тега
 	Name      string   `pg:"name"`     // Название тега
 	StatusID  Status   `pg:"statusId"` // Идентификатор статуса
 }
 
 // Category модель категории
 type Category struct {
-	tableName struct{} `pg:"categories,alias:c"`
-	ID        int      `pg:"categoryId"` // Идентификатор категории
-	Name      string   `pg:"name"`       // Название категории
-	SortOrder int      `pg:"sortOrder"`  // Порядок сортировки
-	StatusID  Status   `pg:"statusId"`   // Идентификатор статуса
+	tableName struct{} `pg:"categories"`
+	ID        int      `pg:"categoryId,pk"` // Идентификатор категории
+	Name      string   `pg:"name"`          // Название категории
+	SortOrder int      `pg:"sortOrder"`     // Порядок сортировки
+	StatusID  Status   `pg:"statusId"`      // Идентификатор статуса
 }
 
 // Pagination пагинация

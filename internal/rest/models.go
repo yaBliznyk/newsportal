@@ -84,5 +84,6 @@ func NewNews(n *portal.News) *News {
 		Author:      n.Author,
 		CreatedAt:   n.CreatedAt,
 		PublishedAt: n.PublishedAt,
+		Tags:        NewTags(n.Tags),
 	}
 }

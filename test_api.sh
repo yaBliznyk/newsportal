@@ -194,7 +194,147 @@ check_status 200 "$status" "listNews with pagination returns 200"
 check_array_length "$body" "news" 2 "listNews with limit=2 returns 2 news"
 
 # -------------------------------------------
-# Test 9: GET /v1/getNews
+# Test 9: GET /v1/listNews with date range (from)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?from=2026-03-01T00:00:00Z${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?from=2026-03-01T00:00:00Z")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "listNews with from filter returns 200"
+
+# -------------------------------------------
+# Test 10: GET /v1/listNews with date range (to)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?to=2026-02-28T23:59:59Z${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?to=2026-02-28T23:59:59Z")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "listNews with to filter returns 200"
+
+# -------------------------------------------
+# Test 11: GET /v1/listNews with date range (from + to)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?from=2026-02-01T00:00:00Z&to=2026-02-28T23:59:59Z${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?from=2026-02-01T00:00:00Z&to=2026-02-28T23:59:59Z")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "listNews with from+to filters returns 200"
+
+# -------------------------------------------
+# Test 12: GET /v1/listNews with combined filters (category + tag)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?category=5&tag=5 (Наука + Космос)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?category=5&tag=5")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "listNews with category+tag filters returns 200"
+check_array_length "$body" "news" 1 "listNews with category=5&tag=5 returns 1 news"
+
+# -------------------------------------------
+# Test 13: GET /v1/countNews with tag filter
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/countNews?tag=5 (Космос)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/countNews?tag=5")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "countNews with tag filter returns 200"
+check_value "$body" "count" "1" "countNews with tag=5 returns 1"
+
+# -------------------------------------------
+# Test 14: GET /v1/countNews with date range (from)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/countNews?from=2026-03-01T00:00:00Z${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/countNews?from=2026-03-01T00:00:00Z")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "countNews with from filter returns 200"
+
+# -------------------------------------------
+# Test 15: GET /v1/countNews with combined filters (category + tag)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/countNews?category=1&tag=1 (Технологии + AI)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/countNews?category=1&tag=1")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "countNews with category+tag filters returns 200"
+check_value "$body" "count" "1" "countNews with category=1&tag=1 returns 1"
+
+# -------------------------------------------
+# Test 16: GET /v1/listNews with negative category ID
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?category=-1 (invalid category)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?category=-1")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 400 "$status" "listNews with category=-1 returns 400"
+check_value "$body" "error" "invalid data" "listNews category error message"
+
+# -------------------------------------------
+# Test 17: GET /v1/listNews with invalid date range (from > to)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?from=2026-12-31T00:00:00Z&to=2026-01-01T00:00:00Z (invalid range)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?from=2026-12-31T00:00:00Z&to=2026-01-01T00:00:00Z")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 400 "$status" "listNews with from > to returns 400"
+check_value "$body" "error" "invalid data" "listNews date range error message"
+
+# -------------------------------------------
+# Test 18: GET /v1/countNews with negative category ID
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/countNews?category=-5 (invalid category)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/countNews?category=-5")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 400 "$status" "countNews with category=-5 returns 400"
+check_value "$body" "error" "invalid data" "countNews category error message"
+
+# -------------------------------------------
+# Test 19: GET /v1/countNews with invalid date range (from > to)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/countNews?from=2026-06-01T00:00:00Z&to=2026-01-01T00:00:00Z (invalid range)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/countNews?from=2026-06-01T00:00:00Z&to=2026-01-01T00:00:00Z")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 400 "$status" "countNews with from > to returns 400"
+check_value "$body" "error" "invalid data" "countNews date range error message"
+
+# -------------------------------------------
+# Test 20: GET /v1/listNews - no results for filter
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/listNews?category=999 (no results)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/listNews?category=999")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "listNews with non-existent category returns 200"
+check_array_length "$body" "news" 0 "listNews with category=999 returns empty array"
+
+# -------------------------------------------
+# Test 21: GET /v1/getNews
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: GET /v1/getNews?id=1${NC}"
@@ -212,7 +352,7 @@ check_field "$body" "news.category" "getNews includes Category"
 check_field "$body" "news.tags" "getNews includes Tags"
 
 # -------------------------------------------
-# Test 10: GET /v1/getNews - not found
+# Test 22: GET /v1/getNews - not found
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: GET /v1/getNews?id=999 (not found)${NC}"
@@ -224,7 +364,7 @@ check_status 404 "$status" "getNews with invalid id returns 404"
 check_field "$body" "error" "getNews error response has error field"
 
 # -------------------------------------------
-# Test 11: GET /v1/getNews - missing id
+# Test 23: GET /v1/getNews - missing id
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: GET /v1/getNews (missing id)${NC}"
