@@ -13,7 +13,7 @@ fi
 
 # Формирование BASE_URL из HTTP_ADDR (по умолчанию :8080)
 HTTP_ADDR="${HTTP_ADDR:-:8080}"
-BASE_URL="http://localhost${HTTP_ADDR}"
+BASE_URL="http://localhost${HTTP_ADDR}/rest"
 FAILED=0
 PASSED=0
 
@@ -376,7 +376,51 @@ check_status 400 "$status" "getNews without id returns 400"
 check_value "$body" "error" "invalid data" "getNews error message is 'invalid data'"
 
 # -------------------------------------------
-# Test 24: GET /v1/countNews vs /v1/listNews consistency
+# Test 24: GET /v1/getNews - draft news (not published)
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/getNews?id=4 (draft news)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/getNews?id=4")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 404 "$status" "getNews with draft news id returns 404"
+
+# -------------------------------------------
+# Test 25: GET /v1/getNews - news in unpublished category
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/getNews?id=5 (news in unpublished category)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/getNews?id=5")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 404 "$status" "getNews with news in unpublished category returns 404"
+
+# -------------------------------------------
+# Test 26: GET /v1/getNews - deleted news
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/getNews?id=6 (deleted news)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/getNews?id=6")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 404 "$status" "getNews with deleted news id returns 404"
+
+# -------------------------------------------
+# Test 27: GET /v1/getNews - news in deleted category
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: GET /v1/getNews?id=7 (news in deleted category)${NC}"
+response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/getNews?id=7")
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 404 "$status" "getNews with news in deleted category returns 404"
+
+# -------------------------------------------
+# Test 28: GET /v1/countNews vs /v1/listNews consistency
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: CountNews equals ListNews length${NC}"

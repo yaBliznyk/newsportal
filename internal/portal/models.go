@@ -23,7 +23,7 @@ type News struct {
 	ID          int       // Идентификатор новости
 	Title       string    // Заголовок новости
 	Preamble    string    // Преамбула (краткое описание)
-	Content     string    // Полный контент новости
+	Content     *string   // Полный контент новости
 	Author      string    // Автор новости
 	CategoryID  int       // Идентификатор категории
 	TagIDs      []int     // Идентификаторы тегов
@@ -64,7 +64,7 @@ func NewNews(n *db.News) *News {
 		ID:          n.ID,
 		Title:       n.Title,
 		Preamble:    n.Preamble,
-		Content:     *n.Content,
+		Content:     n.Content,
 		Author:      n.Author,
 		CategoryID:  n.CategoryID,
 		TagIDs:      n.TagIDs,

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/go-pg/pg/v10/orm"
 )
 
 const defaultLimit = 20
@@ -25,40 +26,24 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, page
 	var news []News
 
 	query := r.db.ModelContext(ctx, &news).
-		Where(`news."statusId" = ?`, filter.StatusID).
-		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
-			if filter.CategoryStatusID != StatusUndefined {
-				return q.Where(`category."statusId" = ?`, filter.CategoryStatusID), nil
-			}
-			return q, nil
-		})
+		Where(`?.? = ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.StatusID), filter.StatusID).
+		Relation(Columns.News.Category)
 
-	if filter.CategoryID != 0 {
-		query = query.Where(`news."categoryId" = ?`, filter.CategoryID)
-	}
-	if filter.TagID != 0 {
-		query = query.Where(`? = ANY(news."tagIds")`, filter.TagID)
-	}
-	if !filter.From.IsZero() {
-		query = query.Where(`news."publishedAt" >= ?`, filter.From)
-	}
-	if !filter.To.IsZero() {
-		query = query.Where(`news."publishedAt" <= ?`, filter.To)
-	}
-	query = query.Order("publishedAt DESC")
+	applyNewsFilter(filter, query)
+	query.OrderExpr(`?.? DESC`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.PublishedAt))
 
 	// Пагинация
 	limit := pager.Limit
 	if limit <= 0 {
 		limit = defaultLimit
 	}
-	query = query.Limit(limit)
+	query.Limit(limit)
 
 	page := pager.Page
 	if page <= 0 {
 		page = 1
 	}
-	query = query.Offset((page - 1) * limit)
+	query.Offset((page - 1) * limit)
 
 	err := query.Select()
 	if err != nil {
@@ -70,25 +55,10 @@ func (r *NewsRepo) ListNewsByFilter(ctx context.Context, filter NewsFilter, page
 // CountNews количество новостей по фильтру
 func (r *NewsRepo) CountNews(ctx context.Context, filter NewsFilter) (int, error) {
 	query := r.db.ModelContext(ctx, (*News)(nil)).
-		Where(`news."statusId" = ?`, filter.StatusID).
+		Where(`?.? = ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.StatusID), filter.StatusID).
 		Relation(Columns.News.Category)
 
-	if filter.CategoryStatusID != StatusUndefined {
-		query = query.Where(`category."statusId" = ?`, filter.CategoryStatusID)
-	}
-
-	if filter.CategoryID != 0 {
-		query = query.Where(`news."categoryId" = ?`, filter.CategoryID)
-	}
-	if filter.TagID != 0 {
-		query = query.Where(`? = ANY(news."tagIds")`, filter.TagID)
-	}
-	if !filter.From.IsZero() {
-		query = query.Where("? >= ?", pg.Ident(Columns.News.PublishedAt), filter.From)
-	}
-	if !filter.To.IsZero() {
-		query = query.Where("? <= ?", pg.Ident(Columns.News.PublishedAt), filter.To)
-	}
+	applyNewsFilter(filter, query)
 
 	count, err := query.Count()
 	if err != nil {
@@ -103,16 +73,15 @@ func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, cate
 	news := &News{}
 
 	query := r.db.ModelContext(ctx, news).
-		Where(`news."newsId" = ?`, id).
-		Relation("Category", func(q *pg.Query) (*pg.Query, error) {
-			if categoryStatusID != StatusUndefined {
-				return q.Where(`category."statusId" = ?`, categoryStatusID), nil
-			}
-			return q, nil
-		})
+		Relation("Category").
+		Where(`?.? = ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.ID), id)
+
+	if categoryStatusID != StatusUndefined {
+		query.Where(`Category.? = ?`, pg.Ident(Columns.Category.StatusID), categoryStatusID)
+	}
 
 	if statusID != StatusUndefined {
-		query = query.Where(`news."statusId" = ?`, statusID)
+		query.Where(`?.? = ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.StatusID), statusID)
 	}
 
 	err := query.Select()
@@ -129,10 +98,10 @@ func (r *NewsRepo) NewsByIDAndStatus(ctx context.Context, id int, statusID, cate
 func (r *NewsRepo) GetCategoryByIDAndStatusID(ctx context.Context, id int, statusID StatusEnum) (*Category, error) {
 	category := &Category{}
 
-	query := r.db.ModelContext(ctx, category).Where(`"categoryId" = ?`, id)
+	query := r.db.ModelContext(ctx, category).Where(`? = ?`, pg.Ident(Columns.Category.ID), id)
 
 	if statusID != StatusUndefined {
-		query = query.Where(`"statusId" = ?`, statusID)
+		query.Where(`? = ?`, pg.Ident(Columns.Category.StatusID), statusID)
 	}
 
 	err := query.Select()
@@ -152,7 +121,7 @@ func (r *NewsRepo) GetCategoriesByStatusID(ctx context.Context, statusID StatusE
 	query := r.db.ModelContext(ctx, &categories)
 
 	if statusID != StatusUndefined {
-		query = query.Where(`"statusId" = ?`, statusID)
+		query.Where(`? = ?`, pg.Ident(Columns.Category.StatusID), statusID)
 	}
 
 	err := query.Select()
@@ -171,10 +140,10 @@ func (r *NewsRepo) GetCategoriesByIDsAndStatusID(ctx context.Context, ids []int,
 
 	var categories []Category
 
-	query := r.db.ModelContext(ctx, &categories).Where(`"categoryId" IN (?)`, pg.In(ids))
+	query := r.db.ModelContext(ctx, &categories).Where(`? IN (?)`, pg.Ident(Columns.Category.ID), pg.In(ids))
 
 	if statusID != StatusUndefined {
-		query = query.Where(`"statusId" = ?`, statusID)
+		query.Where(`? = ?`, pg.Ident(Columns.Category.StatusID), statusID)
 	}
 
 	err := query.Select()
@@ -193,13 +162,13 @@ func (r *NewsRepo) GetTagsByIDsAndStatusID(ctx context.Context, ids []int, statu
 
 	var tags []Tag
 
-	query := r.db.ModelContext(ctx, &tags).Where(`"tagId" IN (?)`, pg.In(ids))
+	query := r.db.ModelContext(ctx, &tags).Where(`? IN (?)`, pg.Ident(Columns.Tag.ID), pg.In(ids))
 
 	if statusID != StatusUndefined {
-		query = query.Where(`"statusId" = ?`, statusID)
+		query.Where(`? = ?`, pg.Ident(Columns.Tag.StatusID), statusID)
 	}
 
-	query = query.OrderExpr(`"name" ASC`)
+	query.OrderExpr(`? ASC`, pg.Ident(Columns.Tag.Name))
 
 	err := query.Select()
 	if err != nil {
@@ -216,14 +185,14 @@ func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, ids []int, statusID St
 	query := r.db.ModelContext(ctx, &tags)
 
 	if len(ids) > 0 {
-		query = query.Where(`"tagId" IN (?)`, pg.In(ids))
+		query.Where(`? IN (?)`, pg.Ident(Columns.Tag.ID), pg.In(ids))
 	}
 
 	if statusID != StatusUndefined {
-		query = query.Where(`"statusId" = ?`, statusID)
+		query.Where(`? = ?`, pg.Ident(Columns.Tag.StatusID), statusID)
 	}
 
-	query = query.OrderExpr(`"name" ASC`)
+	query.OrderExpr(`? ASC`, pg.Ident(Columns.Tag.Name))
 
 	err := query.Select()
 	if err != nil {
@@ -231,4 +200,23 @@ func (r *NewsRepo) GetTagsByStatusID(ctx context.Context, ids []int, statusID St
 	}
 
 	return tags, nil
+}
+
+func applyNewsFilter(filter NewsFilter, query *orm.Query) {
+	if filter.CategoryStatusID != StatusUndefined {
+		query.Where(`category.? = ?`, pg.Ident(Columns.Category.StatusID), filter.CategoryStatusID)
+	}
+
+	if filter.CategoryID != 0 {
+		query.Where(`?.? = ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.CategoryID), filter.CategoryID)
+	}
+	if filter.TagID != 0 {
+		query.Where(`? = ANY(?.?)`, filter.TagID, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.TagIDs))
+	}
+	if !filter.From.IsZero() {
+		query.Where(`?.? >= ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.PublishedAt), filter.From)
+	}
+	if !filter.To.IsZero() {
+		query.Where(`?.? <= ?`, pg.Ident(Tables.News.Alias), pg.Ident(Columns.News.PublishedAt), filter.To)
+	}
 }

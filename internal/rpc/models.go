@@ -20,7 +20,7 @@ type News struct {
 	ID          int       `json:"id"`
 	Title       string    `json:"title"`
 	Preamble    string    `json:"preamble"`
-	Content     string    `json:"content,omitempty"`
+	Content     *string   `json:"content,omitempty"`
 	Author      string    `json:"author"`
 	CreatedAt   time.Time `json:"created_at"`
 	PublishedAt time.Time `json:"published_at"`

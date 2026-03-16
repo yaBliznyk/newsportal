@@ -3,6 +3,7 @@ module github.com/yaBliznyk/newsportal
 go 1.26.0
 
 require (
+	github.com/go-pg/pg/extra/pgdebug/v10 v10.15.0
 	github.com/go-pg/pg/v10 v10.15.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/labstack/echo/v5 v5.0.4

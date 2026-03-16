@@ -66,9 +66,9 @@ func main() {
 
 	// Роутер
 	router := echo.New()
-	router.Any("/doc", echo.WrapHandler(http.HandlerFunc(zenrpc.SMDBoxHandler)))
-	router.Any("/rpc/*", echo.WrapHandler(rpcHandler)) // для RPC
-	router.Any("/rest/*", echo.WrapHandler(restHandler))
+	router.Any("/docs", echo.WrapHandler(http.HandlerFunc(zenrpc.SMDBoxHandler)))
+	router.Group("/rpc").Any("/*", echo.WrapHandler(http.StripPrefix("/rpc", rpcHandler)))
+	router.Group("/rest").Any("/*", echo.WrapHandler(http.StripPrefix("/rest", restHandler)))
 
 	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: router}
 
