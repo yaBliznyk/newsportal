@@ -64,7 +64,7 @@ func NewNews(n *db.News) *News {
 		ID:          n.ID,
 		Title:       n.Title,
 		Preamble:    n.Preamble,
-		Content:     n.Content,
+		Content:     *n.Content,
 		Author:      n.Author,
 		CategoryID:  n.CategoryID,
 		TagIDs:      n.TagIDs,

@@ -24,14 +24,14 @@ func NewNewsHandler(log *slog.Logger, svc *portal.NewsManager) *NewsHandler {
 }
 
 // Handle возвращает http.Handler с зарегистрированными роутами
-func (h *NewsHandler) Handle() http.Handler {
+func (h *NewsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux := echo.New()
 	mux.GET("/v1/listNews", h.listNews)
 	mux.GET("/v1/countNews", h.countNews)
 	mux.GET("/v1/getNews", h.getNews)
 	mux.GET("/v1/getCategories", h.getCategories)
 	mux.GET("/v1/getTags", h.getTags)
-	return mux
+	mux.ServeHTTP(w, r)
 }
 
 // listNews обрабатывает GET /v1/listNews
@@ -103,7 +103,7 @@ func (h *NewsHandler) getCategories(c *echo.Context) error {
 
 // getTags обрабатывает GET /v1/getTags
 func (h *NewsHandler) getTags(c *echo.Context) error {
-	tags, err := h.newsManager.ListTags(c.Request().Context(), []int{})
+	tags, err := h.newsManager.ListTags(c.Request().Context())
 	if err != nil {
 		h.log.Error("ListTags failed", "error", err)
 		return h.sendJsonError(c, err)

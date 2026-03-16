@@ -11,11 +11,14 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/labstack/echo/v5"
+	"github.com/vmkteam/zenrpc/v2"
 
 	"github.com/yaBliznyk/newsportal/internal/config"
 	"github.com/yaBliznyk/newsportal/internal/db"
 	"github.com/yaBliznyk/newsportal/internal/portal"
 	"github.com/yaBliznyk/newsportal/internal/rest"
+	"github.com/yaBliznyk/newsportal/internal/rpc"
 )
 
 func main() {
@@ -53,10 +56,21 @@ func main() {
 	repo := db.NewNewsRepo(pool)
 	newsManager := portal.NewNewsManager(repo)
 
-	// Инициализация HTTP-сервера
-	newsHandler := rest.NewNewsHandler(log, newsManager)
+	// Инициализация REST сервера
+	restHandler := rest.NewNewsHandler(log, newsManager)
 
-	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: newsHandler.Handle()}
+	// Инициализация RPC сервера
+	newsSvc := rpc.NewNewsService(log, newsManager)
+	rpcHandler := zenrpc.NewServer(zenrpc.Options{ExposeSMD: true})
+	rpcHandler.Register("news", newsSvc)
+
+	// Роутер
+	router := echo.New()
+	router.Any("/doc", echo.WrapHandler(http.HandlerFunc(zenrpc.SMDBoxHandler)))
+	router.Any("/rpc/*", echo.WrapHandler(rpcHandler)) // для RPC
+	router.Any("/rest/*", echo.WrapHandler(restHandler))
+
+	server := &http.Server{Addr: cfg.HTTP.Addr, Handler: router}
 
 	// Запуск сервера в горутине для graceful shutdown
 	go func() {
