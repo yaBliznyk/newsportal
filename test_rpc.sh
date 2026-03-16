@@ -185,14 +185,14 @@ body=$(echo "$response" | sed '$d')
 
 check_status 200 "$status" "count returns 200"
 check_no_error "$body" "count has no error"
-check_value "$body" "result" "3" "count returns 3 (published news)"
+check_value "$body" "result" "5" "count returns 5 (published news)"
 
 # -------------------------------------------
 # Test 4: news.count with category filter
 # -------------------------------------------
 echo ""
-echo -e "${YELLOW}Test: news.count with category=5 (Наука)${NC}"
-response=$(rpc_call "news.count" '{"filter":{"CategoryID":5}}')
+echo -e "${YELLOW}Test: news.count with category_id=5 (Наука)${NC}"
+response=$(rpc_call "news.count" '{"filter":{"category_id":5}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -212,14 +212,14 @@ body=$(echo "$response" | sed '$d')
 check_status 200 "$status" "list returns 200"
 check_no_error "$body" "list has no error"
 check_field "$body" "result" "list has result"
-check_array_length "$body" "result" 3 "list returns 3 news"
+check_array_length "$body" "result" 5 "list returns 5 news"
 
 # -------------------------------------------
 # Test 6: news.list with category filter
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.list with category=1 (Технологии)${NC}"
-response=$(rpc_call "news.list" '{"filter":{"CategoryID":1}}')
+response=$(rpc_call "news.list" '{"filter":{"category_id":1}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -233,7 +233,7 @@ check_value "$body" "result[0].title" "Прорыв в области искус
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.list with tag=5 (Космос)${NC}"
-response=$(rpc_call "news.list" '{"filter":{"TagID":5}}')
+response=$(rpc_call "news.list" '{"filter":{"tag_id":5}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -296,7 +296,7 @@ check_no_error "$body" "list with From+To has no error"
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.list with category=5&tag=5 (Наука + Космос)${NC}"
-response=$(rpc_call "news.list" '{"filter":{"CategoryID":5,"TagID":5}}')
+response=$(rpc_call "news.list" '{"filter":{"category_id":5,"tag_id":5}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -309,7 +309,7 @@ check_array_length "$body" "result" 1 "list with category=5&tag=5 returns 1 news
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.count with tag=5 (Космос)${NC}"
-response=$(rpc_call "news.count" '{"filter":{"TagID":5}}')
+response=$(rpc_call "news.count" '{"filter":{"tag_id":5}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -334,7 +334,7 @@ check_no_error "$body" "count with From has no error"
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.count with category=1&tag=1 (Технологии + AI)${NC}"
-response=$(rpc_call "news.count" '{"filter":{"CategoryID":1,"TagID":1}}')
+response=$(rpc_call "news.count" '{"filter":{"category_id":1,"tag_id":1}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -347,7 +347,7 @@ check_value "$body" "result" "1" "count with category=1&tag=1 returns 1"
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.list with category=-1 (invalid category)${NC}"
-response=$(rpc_call "news.list" '{"filter":{"CategoryID":-1}}')
+response=$(rpc_call "news.list" '{"filter":{"category_id":-1}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -371,7 +371,7 @@ check_error "$body" "list with invalid date range returns error"
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.count with category=-5 (invalid category)${NC}"
-response=$(rpc_call "news.count" '{"filter":{"CategoryID":-5}}')
+response=$(rpc_call "news.count" '{"filter":{"category_id":-5}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -395,7 +395,7 @@ check_error "$body" "count with invalid date range returns error"
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.list with category=999 (no results)${NC}"
-response=$(rpc_call "news.list" '{"filter":{"CategoryID":999}}')
+response=$(rpc_call "news.list" '{"filter":{"category_id":999}}')
 status=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
@@ -495,7 +495,93 @@ check_status 200 "$status" "get with news in deleted category returns 200"
 check_null_result "$body" "get with news in deleted category returns null"
 
 # -------------------------------------------
-# Test 28: news.count vs news.list consistency
+# Test 28: news.get - news with unpublished tag
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: news.get with id=8 (news with unpublished tag)${NC}"
+response=$(rpc_call "news.get" '{"id":8}')
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "get with unpublished tag returns 200"
+check_no_error "$body" "get with unpublished tag has no error"
+check_field "$body" "result" "get with unpublished tag has result"
+check_value "$body" "result.id" "8" "get returns correct ID"
+check_value "$body" "result.title" "Новость с неопубликованным тегом" "get returns correct title"
+check_array_length "$body" "result.tags" 0 "get with unpublished tag returns empty tags array"
+
+# -------------------------------------------
+# Test 29: news.get - news with deleted tag
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: news.get with id=9 (news with deleted tag)${NC}"
+response=$(rpc_call "news.get" '{"id":9}')
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "get with deleted tag returns 200"
+check_no_error "$body" "get with deleted tag has no error"
+check_field "$body" "result" "get with deleted tag has result"
+check_value "$body" "result.id" "9" "get returns correct ID"
+check_value "$body" "result.title" "Новость с удаленным тегом" "get returns correct title"
+check_array_length "$body" "result.tags" 0 "get with deleted tag returns empty tags array"
+
+# -------------------------------------------
+# Test 30: news.count with unpublished tag filter
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: news.count with tag=7 (unpublished tag)${NC}"
+response=$(rpc_call "news.count" '{"filter":{"tag_id":7}}')
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "count with unpublished tag returns 200"
+check_no_error "$body" "count with unpublished tag has no error"
+check_value "$body" "result" "1" "count with tag=7 returns 1"
+
+# -------------------------------------------
+# Test 31: news.list with unpublished tag filter
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: news.list with tag=7 (unpublished tag)${NC}"
+response=$(rpc_call "news.list" '{"filter":{"tag_id":7}}')
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "list with unpublished tag returns 200"
+check_no_error "$body" "list with unpublished tag has no error"
+check_array_length "$body" "result" 1 "list with tag=7 returns 1 news"
+check_array_length "$body" "result[0].tags" 0 "news with unpublished tag has empty tags array"
+
+# -------------------------------------------
+# Test 32: news.count with deleted tag filter
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: news.count with tag=8 (deleted tag)${NC}"
+response=$(rpc_call "news.count" '{"filter":{"tag_id":8}}')
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "count with deleted tag returns 200"
+check_no_error "$body" "count with deleted tag has no error"
+check_value "$body" "result" "1" "count with tag=8 returns 1"
+
+# -------------------------------------------
+# Test 33: news.list with deleted tag filter
+# -------------------------------------------
+echo ""
+echo -e "${YELLOW}Test: news.list with tag=8 (deleted tag)${NC}"
+response=$(rpc_call "news.list" '{"filter":{"tag_id":8}}')
+status=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+check_status 200 "$status" "list with deleted tag returns 200"
+check_no_error "$body" "list with deleted tag has no error"
+check_array_length "$body" "result" 1 "list with tag=8 returns 1 news"
+check_array_length "$body" "result[0].tags" 0 "news with deleted tag has empty tags array"
+
+# -------------------------------------------
+# Test 34: news.count vs news.list consistency
 # -------------------------------------------
 echo ""
 echo -e "${YELLOW}Test: news.count equals news.list length${NC}"

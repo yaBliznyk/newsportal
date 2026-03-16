@@ -33,22 +33,22 @@ func (NewsService) SMD() smd.ServiceInfo {
 						TypeName: "NewsFilter",
 						Properties: smd.PropertyList{
 							{
-								Name:        "CategoryID",
+								Name:        "category_id",
 								Description: `Идентификатор категории`,
 								Type:        smd.Integer,
 							},
 							{
-								Name:        "TagID",
+								Name:        "tag_id",
 								Description: `Идентификатор тега`,
 								Type:        smd.Integer,
 							},
 							{
-								Name:        "From",
+								Name:        "from",
 								Description: `Начало периода`,
 								Type:        smd.String,
 							},
 							{
-								Name:        "To",
+								Name:        "to",
 								Description: `Конец периода`,
 								Type:        smd.String,
 							},
@@ -60,12 +60,12 @@ func (NewsService) SMD() smd.ServiceInfo {
 						TypeName: "Pager",
 						Properties: smd.PropertyList{
 							{
-								Name:        "Page",
+								Name:        "page",
 								Description: `Номер страницы`,
 								Type:        smd.Integer,
 							},
 							{
-								Name:        "Limit",
+								Name:        "limit",
 								Description: `Количество на страницу`,
 								Type:        smd.Integer,
 							},
@@ -95,8 +95,9 @@ func (NewsService) SMD() smd.ServiceInfo {
 									Type: smd.String,
 								},
 								{
-									Name: "content",
-									Type: smd.String,
+									Name:     "content",
+									Optional: true,
+									Type:     smd.String,
 								},
 								{
 									Name: "author",
@@ -162,22 +163,22 @@ func (NewsService) SMD() smd.ServiceInfo {
 						TypeName: "NewsFilter",
 						Properties: smd.PropertyList{
 							{
-								Name:        "CategoryID",
+								Name:        "category_id",
 								Description: `Идентификатор категории`,
 								Type:        smd.Integer,
 							},
 							{
-								Name:        "TagID",
+								Name:        "tag_id",
 								Description: `Идентификатор тега`,
 								Type:        smd.Integer,
 							},
 							{
-								Name:        "From",
+								Name:        "from",
 								Description: `Начало периода`,
 								Type:        smd.String,
 							},
 							{
-								Name:        "To",
+								Name:        "to",
 								Description: `Конец периода`,
 								Type:        smd.String,
 							},
@@ -213,8 +214,9 @@ func (NewsService) SMD() smd.ServiceInfo {
 							Type: smd.String,
 						},
 						{
-							Name: "content",
-							Type: smd.String,
+							Name:     "content",
+							Optional: true,
+							Type:     smd.String,
 						},
 						{
 							Name: "author",

@@ -22,7 +22,9 @@ INSERT INTO "tags" ("name", "statusId") VALUES
     ('Футбол', 1),
     ('Кино', 1),
     ('Космос', 1),
-    ('Финансы', 1);
+    ('Финансы', 1),
+    ('Скрытый тег', 2),   -- Неопубликованный тег
+    ('Удаленный тег', 3); -- Удаленный тег
 
 -- Новости
 INSERT INTO "news" ("title", "categoryId", "tagIds", "author", "preamble", "content", "publishedAt", "statusId") VALUES
@@ -92,6 +94,26 @@ INSERT INTO "news" ("title", "categoryId", "tagIds", "author", "preamble", "cont
         ARRAY[]::int[],
         'Тест',
         'Эта новость в удаленной категории.',
+        NULL,
+        NOW(),
+        1
+    ),
+    (
+        'Новость с неопубликованным тегом',
+        1,
+        ARRAY[7],
+        'Тест',
+        'Эта новость с неопубликованным тегом.',
+        NULL,
+        NOW(),
+        1
+    ),
+    (
+        'Новость с удаленным тегом',
+        1,
+        ARRAY[8],
+        'Тест',
+        'Эта новость с удаленным тегом.',
         NULL,
         NOW(),
         1

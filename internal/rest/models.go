@@ -29,12 +29,12 @@ type News struct {
 }
 
 type ListNewsReq struct {
-	CategoryID int       `query:"category"` // Идентификатор категории
-	TagID      int       `query:"tag"`      // Идентификатор тега
-	From       time.Time `query:"from"`     // Начало периода
-	To         time.Time `query:"to"`       // Конец периода
-	Page       int       `query:"page"`     // Номер страницы
-	Limit      int       `query:"limit"`    // Количество на страницу
+	CategoryID int       `query:"category_id"` // Идентификатор категории
+	TagID      int       `query:"tag_id"`      // Идентификатор тега
+	From       time.Time `query:"from"`        // Начало периода
+	To         time.Time `query:"to"`          // Конец периода
+	Page       int       `query:"page"`        // Номер страницы
+	Limit      int       `query:"limit"`       // Количество на страницу
 }
 
 func (r ListNewsReq) ToPortalFilter() portal.ListNewsFilter {
